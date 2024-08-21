@@ -1,0 +1,8 @@
+# Virtual environment
+venv/
+BTC_Price_API/
+
+# Python bytecode
+*.pyc
+*.pyo
+__pycache__/
