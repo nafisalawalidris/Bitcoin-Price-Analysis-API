@@ -6,7 +6,8 @@ import pandas as pd
 from sqlalchemy import create_engine, Column, Date, Float, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-import psycopg2  # Import psycopg2
+import psycopg2
+import asyncio  # Import asyncio
 
 DATABASE_URL = "postgresql://postgres:Feenah413@localhost/Bitcoin_Prices_Database"
 
