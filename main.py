@@ -36,7 +36,7 @@ class BitcoinPriceBase(BaseModel):
     volume: float
 
     class Config:
-        from_attributes = True 
+        from_attributes = True  # Use 'from_attributes' for Pydantic V2
 
 class BitcoinPriceResponse(BitcoinPriceBase):
     id: int
@@ -82,9 +82,6 @@ def get_prices_by_halving(halving_number: int, db: Session = Depends(get_db)):
     end_date = pd.to_datetime(start_date) + pd.DateOffset(years=4)
     end_date_str = end_date.strftime("%Y-%m-%d")
 
-    # Debug: Print start and end dates
-    print(f"Fetching prices from {start_date} to {end_date_str}")
-
     prices = db.query(BitcoinPrice).filter(BitcoinPrice.date.between(start_date, end_date_str)).all()
     if not prices:
         raise HTTPException(status_code=404, detail="No prices found for the given halving period")
@@ -112,9 +109,11 @@ def get_prices_across_halvings(db: Session = Depends(get_db)):
 @app.get("/prices/bybit", response_model=BitcoinPriceBase)
 def get_bybit_price():
     response = requests.get("https://api.bybit.com/v2/public/tickers")
-    data = response.json()
-    if response.status_code != 200 or 'result' not in data:
+    if response.status_code != 200:
         raise HTTPException(status_code=500, detail="Error fetching data from Bybit")
+    data = response.json()
+    if 'result' not in data:
+        raise HTTPException(status_code=500, detail="Invalid response format from Bybit")
     price_data = data['result'][0]  # Adjust based on response structure
     return BitcoinPriceBase(
         date=pd.to_datetime(price_data['timestamp']).strftime('%Y-%m-%d'),
@@ -129,9 +128,9 @@ def get_bybit_price():
 @app.get("/prices/binance", response_model=BitcoinPriceBase)
 def get_binance_price():
     response = requests.get("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT")
-    data = response.json()
     if response.status_code != 200:
         raise HTTPException(status_code=500, detail="Error fetching data from Binance")
+    data = response.json()
     return BitcoinPriceBase(
         date=pd.to_datetime(data['closeTime'], unit='ms').strftime('%Y-%m-%d'),
         open=float(data['openPrice']),
@@ -145,9 +144,11 @@ def get_binance_price():
 @app.get("/prices/yahoo", response_model=BitcoinPriceBase)
 def get_yahoo_price():
     response = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/BTC-USD")
-    data = response.json()
-    if response.status_code != 200 or 'chart' not in data:
+    if response.status_code != 200:
         raise HTTPException(status_code=500, detail="Error fetching data from Yahoo Finance")
+    data = response.json()
+    if 'chart' not in data or 'result' not in data['chart']:
+        raise HTTPException(status_code=500, detail="Invalid response format from Yahoo Finance")
     result = data['chart']['result'][0]
     indicators = result['indicators']['quote'][0]
     timestamp = result['timestamp'][0]
