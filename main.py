@@ -1,22 +1,19 @@
-# main.py
-
-from fastapi import FastAPI, HTTPException, Depends  # FastAPI and its components for creating the API and handling errors
-from sqlalchemy import create_engine, Column, Integer, Float, Date  # SQLAlchemy for database operations and defining columns
-from sqlalchemy.ext.declarative import declarative_base  # Base class for SQLAlchemy models
-from sqlalchemy.orm import sessionmaker, Session  # ORM tools to create and manage database sessions
-from pydantic import BaseModel  # Pydantic for data validation and schema creation
-from typing import List  # Typing module to specify list types in function definitions
-import asyncio  # Asyncio for running asynchronous functions (e.g., loading data on startup)
-import pandas as pd  # Pandas for data manipulation (used here to read CSV files)
-import os  # OS module to handle environment variables and file paths
+from fastapi import FastAPI, HTTPException, Depends
+from sqlalchemy import create_engine, Column, Integer, Float, Date
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, Session
+from pydantic import BaseModel
+from typing import List
+from datetime import date
+import pandas as pd
 
 # Define the SQLAlchemy database URL - this should match your PostgreSQL connection details
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:Feenah413@localhost/Bitcoin_Prices_Database")
+DATABASE_URL = "postgresql://postgres:Feenah413@localhost/Bitcoin_Prices_Database"
 
 # Set up the SQLAlchemy database engine
 engine = create_engine(DATABASE_URL)
 
-# Create a session maker, which generates new Session objects when called
+# Create a session maker
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Declare the Base class for SQLAlchemy models to inherit from
@@ -24,100 +21,102 @@ Base = declarative_base()
 
 # Define the SQLAlchemy model for the bitcoin_prices table
 class BitcoinPrice(Base):
-    __tablename__ = "bitcoin_prices"  # Name of the table in the database
+    __tablename__ = "bitcoin_prices"
 
-    id = Column(Integer, primary_key=True, index=True)  # Primary key column (auto-incrementing)
-    date = Column(Date, index=True, unique=True)  # Date of the Bitcoin price entry, must be unique to avoid duplicates
-    open = Column(Float)  # Opening price of Bitcoin on the date
-    high = Column(Float)  # Highest price of Bitcoin on the date
-    low = Column(Float)  # Lowest price of Bitcoin on the date
-    close = Column(Float)  # Closing price of Bitcoin on the date
-    adj_close = Column(Float)  # Adjusted closing price of Bitcoin on the date
-    volume = Column(Float)  # Trading volume of Bitcoin on the date
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(Date, index=True, unique=True)
+    open = Column(Float)
+    high = Column(Float)
+    low = Column(Float)
+    close = Column(Float)
+    adj_close = Column(Float)
+    volume = Column(Float)
 
 # Pydantic schema for data validation
 class BitcoinPriceBase(BaseModel):
-    date: str  # The date of the price entry as a string
-    open: float  # The opening price
-    high: float  # The highest price
-    low: float  # The lowest price
-    close: float  # The closing price
-    adj_close: float  # The adjusted closing price
-    volume: float  # The trading volume
+    date: str
+    open: float
+    high: float
+    low: float
+    close: float
+    adj_close: float
+    volume: float
 
-# Pydantic schema for creating a new Bitcoin price entry
-class BitcoinPriceCreate(BitcoinPriceBase):
-    pass  # Inherits all fields from BitcoinPriceBase without changes
-
-# Pydantic schema for response data, including an ID
 class BitcoinPriceResponse(BitcoinPriceBase):
-    id: int  # ID of the price entry
+    id: int
 
     class Config:
-        orm_mode = True  # Enable ORM mode to work with SQLAlchemy models
+        orm_mode = True
 
-# Initialize the FastAPI application
+# Initialise the FastAPI application
 app = FastAPI()
 
 # Dependency function to create a new database session per request
 def get_db():
-    db = SessionLocal()  # Create a new session
+    db = SessionLocal()
     try:
-        yield db  # Yield the session object to be used in API endpoints
+        yield db
     finally:
-        db.close()  # Close the session after the request is finished
-
-# Create the database tables (if they do not exist) when the application starts
-Base.metadata.create_all(bind=engine)
-
-# Asynchronous function to load CSV data into the database
-async def load_data_to_db():
-    try:
-        with engine.connect() as connection:  # Create a raw connection to the database
-            # Load CSV data into a Pandas DataFrame
-            csv_file_path = "data\BTC-USD Yahoo Finance - Max Yrs.csv"
-            df = pd.read_csv(csv_file_path)
-            df['Date'] = pd.to_datetime(df['Date'])  # Convert 'Date' column to datetime
-
-            # Iterate through DataFrame rows and insert each row into the database
-            for _, row in df.iterrows():
-                stmt = BitcoinPrice.__table__.insert().values(
-                    date=row['Date'],
-                    open=row['Open'],
-                    high=row['High'],
-                    low=row['Low'],
-                    close=row['Close'],
-                    adj_close=row['Adj Close'],
-                    volume=row['Volume']
-                )
-                connection.execute(stmt)  # Execute the insert statement for each row
-            connection.commit()  # Commit all the transactions
-            print("Data loaded successfully!")  # Log success message
-    except Exception as error:
-        print(f"An error occurred while loading data: {error}")  # Log error message
-
-# Register an event to run the data loading function on application startup
-@app.on_event("startup")
-async def startup_event():
-    asyncio.create_task(load_data_to_db())  # Run load_data_to_db asynchronously
+        db.close()
 
 # API endpoint to retrieve all Bitcoin price entries
 @app.get("/prices/", response_model=List[BitcoinPriceResponse])
 def get_all_prices(db: Session = Depends(get_db)):
-    """
-    Retrieve all Bitcoin prices from the database.
-    """
-    prices = db.query(BitcoinPrice).all()  # Query all rows in the BitcoinPrice table
-    return prices  # Return the results as a list
+    prices = db.query(BitcoinPrice).all()
+    return prices
 
-# API endpoint to add a new Bitcoin price entry
-@app.post("/prices/", response_model=BitcoinPriceResponse)
-def create_price(price: BitcoinPriceCreate, db: Session = Depends(get_db)):
-    """
-    Add a new Bitcoin price entry to the database.
-    """
-    db_price = BitcoinPrice(**price.dict())  # Create a new BitcoinPrice object from the input data
-    db.add(db_price)  # Add the new object to the session
-    db.commit()  # Commit the transaction to save the new entry in the database
-    db.refresh(db_price)  # Refresh the session to reflect the saved entry
-    return db_price  # Return the newly created entry
+# API endpoint to get Bitcoin price entries for a specific year
+@app.get("/prices/{year}", response_model=List[BitcoinPriceResponse])
+def get_prices_by_year(year: int, db: Session = Depends(get_db)):
+    if year < 0:
+        raise HTTPException(status_code=400, detail="Invalid year")
+    start_date = f"{year}-01-01"
+    end_date = f"{year}-12-31"
+    prices = db.query(BitcoinPrice).filter(BitcoinPrice.date.between(start_date, end_date)).all()
+    if not prices:
+        raise HTTPException(status_code=404, detail="No prices found for the given year")
+    return prices
+
+# API endpoint to get Bitcoin price entries for a specific halving period
+@app.get("/prices/halving/{halving_number}", response_model=List[BitcoinPriceResponse])
+def get_prices_by_halving(halving_number: int, db: Session = Depends(get_db)):
+    # Define halving dates (approximate dates for halving events)
+    halving_dates = {
+        1: "2012-11-28",
+        2: "2016-07-09",
+        3: "2020-05-11",
+        4: "2024-04-20",
+    }
+    
+    if halving_number not in halving_dates:
+        raise HTTPException(status_code=404, detail="Halving period not found")
+    
+    start_date = halving_dates[halving_number]
+    end_date = pd.to_datetime(start_date) + pd.DateOffset(years=4)
+    end_date_str = end_date.strftime("%Y-%m-%d")
+    
+    prices = db.query(BitcoinPrice).filter(BitcoinPrice.date.between(start_date, end_date_str)).all()
+    if not prices:
+        raise HTTPException(status_code=404, detail="No prices found for the given halving period")
+    return prices
+
+# API endpoint to get Bitcoin price entries across all halving periods
+@app.get("/prices/halvings", response_model=List[BitcoinPriceResponse])
+def get_prices_across_halvings(db: Session = Depends(get_db)):
+    # Define halving dates
+    halving_dates = [
+        "2012-11-28",
+        "2016-07-09",
+        "2020-05-11",
+        "2024-04-20"
+    ]
+    
+    prices = []
+    for start_date in halving_dates:
+        end_date = pd.to_datetime(start_date) + pd.DateOffset(years=4)
+        end_date_str = end_date.strftime("%Y-%m-%d")
+        prices.extend(db.query(BitcoinPrice).filter(BitcoinPrice.date.between(start_date, end_date_str)).all())
+    
+    if not prices:
+        raise HTTPException(status_code=404, detail="No prices found for the halving periods")
+    return prices
