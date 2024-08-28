@@ -1,12 +1,20 @@
+# main.py
+
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List
 from sqlalchemy import create_engine, Column, Integer, Float, String, Date
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import inspect
 import pandas as pd
 import requests
 import yfinance as yf
+import logging
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Create a FastAPI instance
 app = FastAPI()
@@ -36,7 +44,7 @@ class BitcoinPrice(Base):
     adj_close = Column(Float)
     volume = Column(Float)
 
-# Define a Pydantic model for Bitcoin price data
+# Define Pydantic models for Bitcoin price data
 class BitcoinPriceBase(BaseModel):
     date: str
     open: float
@@ -46,14 +54,16 @@ class BitcoinPriceBase(BaseModel):
     adj_close: float
     volume: float
 
-    class Config:
-        orm_mode = True
+class BitcoinPriceCreate(BitcoinPriceBase):
+    pass
 
-# Define a response model that includes an ID for each price entry
 class BitcoinPriceResponse(BitcoinPriceBase):
     id: int
 
-# Dependency to get the SQLAlchemy session
+    class Config:
+        orm_mode = True
+
+# Dependency for database session
 def get_db():
     db = SessionLocal()
     try:
@@ -61,27 +71,43 @@ def get_db():
     finally:
         db.close()
 
-# Endpoint to get all Bitcoin prices
+# Initialise database on startup
+@app.on_event("startup")
+def on_startup():
+    # Create tables in the database if they do not exist
+    Base.metadata.create_all(bind=engine)
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+    logger.info(f"Tables in database: {tables}")
+    columns = inspector.get_columns('bitcoin_prices')
+    logger.info(f"Columns in bitcoin_prices: {columns}")
+
 @app.get("/prices/", response_model=List[BitcoinPriceResponse])
 def get_all_prices(db: Session = Depends(get_db)):
-    prices = db.query(BitcoinPrice).all()
-    if not prices:
-        raise HTTPException(status_code=404, detail="No prices found.")
-    return prices
+    try:
+        prices = db.query(BitcoinPrice).all()
+        if not prices:
+            raise HTTPException(status_code=404, detail="No prices found.")
+        return prices
+    except Exception as e:
+        logger.error(f"Error fetching all prices: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
-# Endpoint to get Bitcoin prices for a specific year
 @app.get("/prices/{year}", response_model=List[BitcoinPriceResponse])
 def get_prices_by_year(year: int, db: Session = Depends(get_db)):
     if year < 0:
         raise HTTPException(status_code=400, detail="Invalid year. Year must be a positive integer.")
     start_date = f"{year}-01-01"
     end_date = f"{year}-12-31"
-    prices = db.query(BitcoinPrice).filter(BitcoinPrice.date.between(start_date, end_date)).all()
-    if not prices:
-        raise HTTPException(status_code=404, detail="No prices found for the given year")
-    return prices
+    try:
+        prices = db.query(BitcoinPrice).filter(BitcoinPrice.date.between(start_date, end_date)).all()
+        if not prices:
+            raise HTTPException(status_code=404, detail="No prices found for the given year")
+        return prices
+    except Exception as e:
+        logger.error(f"Error fetching prices by year {year}: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
-# Endpoint to get Bitcoin prices by halving number
 @app.get("/prices/halving/{halving_number}", response_model=List[BitcoinPriceResponse])
 def get_prices_by_halving(halving_number: int, db: Session = Depends(get_db)):
     halving_dates = {
@@ -94,12 +120,15 @@ def get_prices_by_halving(halving_number: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid halving number. Must be 1, 2, 3, or 4.")
     start_date = halving_dates[halving_number]
     end_date = (pd.to_datetime(start_date) + pd.DateOffset(years=4)).strftime("%Y-%m-%d")
-    prices = db.query(BitcoinPrice).filter(BitcoinPrice.date.between(start_date, end_date)).all()
-    if not prices:
-        raise HTTPException(status_code=404, detail="No prices found for the given halving period")
-    return prices
+    try:
+        prices = db.query(BitcoinPrice).filter(BitcoinPrice.date.between(start_date, end_date)).all()
+        if not prices:
+            raise HTTPException(status_code=404, detail="No prices found for the given halving period")
+        return prices
+    except Exception as e:
+        logger.error(f"Error fetching prices by halving {halving_number}: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
-# Endpoint to get Bitcoin prices across all halving periods
 @app.get("/prices/halvings", response_model=List[BitcoinPriceResponse])
 def get_prices_across_halvings(db: Session = Depends(get_db)):
     halving_dates = [
@@ -109,20 +138,30 @@ def get_prices_across_halvings(db: Session = Depends(get_db)):
         "2024-04-20"
     ]
     prices = []
-    for start_date in halving_dates:
-        end_date = (pd.to_datetime(start_date) + pd.DateOffset(years=4)).strftime("%Y-%m-%d")
-        prices.extend(db.query(BitcoinPrice).filter(BitcoinPrice.date.between(start_date, end_date)).all())
-    if not prices:
-        raise HTTPException(status_code=404, detail="No prices found for the halving periods")
-    return prices
+    try:
+        for start_date in halving_dates:
+            end_date = (pd.to_datetime(start_date) + pd.DateOffset(years=4)).strftime("%Y-%m-%d")
+            prices.extend(db.query(BitcoinPrice).filter(BitcoinPrice.date.between(start_date, end_date)).all())
+        if not prices:
+            raise HTTPException(status_code=404, detail="No prices found for the halving periods")
+        return prices
+    except Exception as e:
+        logger.error(f"Error fetching prices across halvings: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
-# Endpoint to get Bitcoin price data from Bybit API
+def fetch_price_from_api(url: str):
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raises HTTPError for bad responses
+        return response.json()
+    except requests.RequestException as e:
+        logger.error(f"Error fetching data from API {url}: {e}")
+        raise HTTPException(status_code=500, detail="Error fetching data from API")
+
 @app.get("/prices/bybit", response_model=BitcoinPriceBase)
 def get_bybit_price():
-    response = requests.get("https://api.bybit.com/v2/public/tickers")
-    if response.status_code != 200:
-        raise HTTPException(status_code=500, detail="Error fetching data from Bybit")
-    data = response.json()
+    url = "https://api.bybit.com/v2/public/tickers?symbol=BTCUSD"
+    data = fetch_price_from_api(url)
     if 'result' not in data:
         raise HTTPException(status_code=500, detail="Invalid response format from Bybit")
     price_data = data['result'][0]
@@ -136,13 +175,10 @@ def get_bybit_price():
         volume=float(price_data['volume_24h'])
     )
 
-# Endpoint to get Bitcoin price data from Binance API
 @app.get("/prices/binance", response_model=BitcoinPriceBase)
 def get_binance_price():
-    response = requests.get("https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT")
-    if response.status_code != 200:
-        raise HTTPException(status_code=500, detail="Error fetching data from Binance")
-    data = response.json()
+    url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
+    data = fetch_price_from_api(url)
     return BitcoinPriceBase(
         date=pd.to_datetime(data['closeTime'], unit='ms').strftime('%Y-%m-%d'),
         open=float(data['openPrice']),
@@ -153,13 +189,10 @@ def get_binance_price():
         volume=float(data['volume'])
     )
 
-# Endpoint to get Bitcoin price data from Kraken API
 @app.get("/prices/kraken", response_model=BitcoinPriceBase)
 def get_kraken_price():
-    response = requests.get("https://api.kraken.com/0/public/Ticker?pair=XBTUSD")
-    if response.status_code != 200:
-        raise HTTPException(status_code=500, detail="Error fetching data from Kraken")
-    data = response.json()
+    url = "https://api.kraken.com/0/public/Ticker?pair=XBTUSD"
+    data = fetch_price_from_api(url)
     if 'result' not in data:
         raise HTTPException(status_code=500, detail="Invalid response format from Kraken")
     price_data = data['result']['XXBTZUSD']
@@ -173,21 +206,20 @@ def get_kraken_price():
         volume=float(price_data['v'][0])
     )
 
-# Endpoint to get Bitcoin price data from Yahoo Finance
 @app.get("/prices/yahoo", response_model=List[BitcoinPriceBase])
 def get_yahoo_prices():
     data = yf.download("BTC-USD", period="1y", interval="1d")
     if data.empty:
-        raise HTTPException(status_code=404, detail="No data found from Yahoo Finance")
-    return [
-        BitcoinPriceBase(
-            date=date.strftime('%Y-%m-%d'),
+        raise HTTPException(status_code=404, detail="No price data found from Yahoo Finance.")
+    yahoo_prices = []
+    for index, row in data.iterrows():
+        yahoo_prices.append(BitcoinPriceBase(
+            date=index.strftime("%Y-%m-%d"),
             open=row['Open'],
             high=row['High'],
             low=row['Low'],
             close=row['Close'],
             adj_close=row['Adj Close'],
             volume=row['Volume']
-        )
-        for date, row in data.iterrows()
-    ]
+        ))
+    return yahoo_prices

@@ -6,3 +6,4 @@ BTC_Price_API/
 *.pyc
 *.pyo
 __pycache__/
+.pytest_cache
