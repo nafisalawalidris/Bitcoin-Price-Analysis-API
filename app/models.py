@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Float, Date, Index
-from .database import Base
+from .database import Base 
 from pydantic import BaseModel, validator
 from datetime import date
 
@@ -7,7 +7,7 @@ from datetime import date
 class BitcoinPrice(Base):
     __tablename__ = "bitcoin_prices"
 
-    date = Column(Date, primary_key=True, nullable=False)
+    date = Column(Date, primary_key=True)
     open = Column(Float, nullable=False)
     high = Column(Float, nullable=False)
     low = Column(Float, nullable=False)
@@ -15,7 +15,7 @@ class BitcoinPrice(Base):
     adj_close = Column(Float, nullable=False)
     volume = Column(Float, nullable=False)
 
-    # Example of creating an index on 'date' for faster queries
+    # Creating an index on 'date' for faster queries
     __table_args__ = (
         Index('ix_date', 'date'),
     )
@@ -40,7 +40,6 @@ class BitcoinPriceCreate(BitcoinPriceBase):
     pass
 
 class BitcoinPriceResponse(BitcoinPriceBase):
-    id: int
-
+    
     class Config:
         orm_mode = True
