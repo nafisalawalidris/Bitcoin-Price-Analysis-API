@@ -2,6 +2,9 @@ from sqlalchemy import Column, Float, Date, Index
 from sqlalchemy.ext.declarative import declarative_base
 from .database import Base  # Import Base from your database setup file
 
+
+Base = declarative_base()
+
 # Define a SQLAlchemy model for Bitcoin price data
 class BitcoinPrice(Base):
     __tablename__ = "bitcoin_prices"
