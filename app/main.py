@@ -1,33 +1,31 @@
 from typing import List
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel, validator
-from sqlalchemy import create_engine, Column, Float, String, Date
+from pydantic import BaseModel
+from sqlalchemy import create_engine, Column, Float, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-import requests
-import logging
-import yfinance as yf
-from datetime import date
+from sqlalchemy.sql import text
 import os
-from dotenv import load_dotenv
+import requests
+import yfinance as yf
+import logging
 
-# Load environment variables from a .env file
-load_dotenv()
-
-# Initialize logging to monitor application events and errors
+# Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Database URL from environment variables
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:Feenah413@localhost/Bitcoin_Prices_Database")
+# Environment variables
+POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "Feenah413")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "Bitcoin_Prices_Database")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 
-# Create a SQLAlchemy engine for database connection
+SQLALCHEMY_DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+
+# SQLAlchemy setup
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
-
-# Create a configured "Session" class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Base class for declarative class definitions
 Base = declarative_base()
 
 # Define SQLAlchemy model for Bitcoin prices
@@ -41,8 +39,8 @@ class BitcoinPrice(Base):
     adj_close = Column(Float)
     volume = Column(Float)
 
-# Create the tables in the database
-Base.metadata.create_all(bind=engine)
+# Create FastAPI app instance
+app = FastAPI()
 
 # Dependency to get the database session
 def get_db():
@@ -52,24 +50,15 @@ def get_db():
     finally:
         db.close()
 
-# Create FastAPI app instance
-app = FastAPI()
-
-# Define Pydantic models for request and response handling
+# Define Pydantic models
 class BitcoinPriceBase(BaseModel):
-    date: date
+    date: str
     open: float
     high: float
     low: float
     close: float
     adj_close: float
     volume: float
-
-    @validator('volume')
-    def check_volume_positive(cls, v):
-        if v < 0:
-            raise ValueError('Volume must be positive')
-        return v
 
 class BitcoinPriceCreate(BitcoinPriceBase):
     pass
@@ -89,13 +78,13 @@ def fetch_price_from_api(url: str):
         raise HTTPException(status_code=500, detail="Failed to fetch data from API")
 
 # Define endpoints
-@app.get("/prices/", response_model=List[BitcoinPriceBase])
+@app.get("/prices/", response_model=List[BitcoinPriceResponse])
 def get_all_prices(db: Session = Depends(get_db)):
     logger.info("Endpoint /prices/ was accessed")
     prices = db.query(BitcoinPrice).all()
     return prices
 
-@app.get("/prices/{year}", response_model=List[BitcoinPriceBase])
+@app.get("/prices/{year}", response_model=List[BitcoinPriceResponse])
 def get_prices_by_year(year: int, db: Session = Depends(get_db)):
     logger.info(f"Endpoint /prices/{year} was accessed")
     if year < 0:
@@ -105,7 +94,7 @@ def get_prices_by_year(year: int, db: Session = Depends(get_db)):
     prices_by_year = db.query(BitcoinPrice).filter(BitcoinPrice.date.between(start_date, end_date)).all()
     return prices_by_year
 
-@app.get("/prices/halving/{halving_number}", response_model=List[BitcoinPriceBase])
+@app.get("/prices/halving/{halving_number}", response_model=List[BitcoinPriceResponse])
 def get_prices_by_halving(halving_number: int, db: Session = Depends(get_db)):
     logger.info(f"Endpoint /prices/halving/{halving_number} was accessed")
     halving_dates = {
@@ -120,7 +109,7 @@ def get_prices_by_halving(halving_number: int, db: Session = Depends(get_db)):
     prices_by_halving = db.query(BitcoinPrice).filter(BitcoinPrice.date >= halving_date).all()
     return prices_by_halving
 
-@app.get("/prices/halvings", response_model=List[BitcoinPriceBase])
+@app.get("/prices/halvings", response_model=List[BitcoinPriceResponse])
 def get_prices_across_halvings(db: Session = Depends(get_db)):
     logger.info("Endpoint /prices/halvings was accessed")
     halving_dates = [
@@ -135,14 +124,14 @@ def get_prices_across_halvings(db: Session = Depends(get_db)):
         prices_across_halvings.extend(prices)
     return prices_across_halvings
 
-@app.get("/prices/bybit", response_model=BitcoinPriceBase)
+@app.get("/prices/bybit", response_model=BitcoinPriceResponse)
 def get_bybit_price():
     logger.info("Endpoint /prices/bybit was accessed")
     url = "https://api.bybit.com/v2/public/tickers?symbol=BTCUSD"
     data = fetch_price_from_api(url)
     price_data = data['result'][0]
-    bybit_price = BitcoinPriceBase(
-        date=date.today(),  # Use the current date
+    bybit_price = BitcoinPriceResponse(
+        date=date.today().strftime("%Y-%m-%d"),  # Use the current date
         open=float(price_data['last_price']),
         high=float(price_data['last_price']),
         low=float(price_data['last_price']),
@@ -152,13 +141,13 @@ def get_bybit_price():
     )
     return bybit_price
 
-@app.get("/prices/binance", response_model=BitcoinPriceBase)
+@app.get("/prices/binance", response_model=BitcoinPriceResponse)
 def get_binance_price():
     logger.info("Endpoint /prices/binance was accessed")
     url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
     data = fetch_price_from_api(url)
-    binance_price = BitcoinPriceBase(
-        date=date.today(),  # Use the current date
+    binance_price = BitcoinPriceResponse(
+        date=date.today().strftime("%Y-%m-%d"),  # Use the current date
         open=float(data['openPrice']),
         high=float(data['highPrice']),
         low=float(data['lowPrice']),
@@ -168,14 +157,14 @@ def get_binance_price():
     )
     return binance_price
 
-@app.get("/prices/kraken", response_model=BitcoinPriceBase)
+@app.get("/prices/kraken", response_model=BitcoinPriceResponse)
 def get_kraken_price():
     logger.info("Endpoint /prices/kraken was accessed")
     url = "https://api.kraken.com/0/public/Ticker?pair=XBTUSD"
     data = fetch_price_from_api(url)
     price_data = data['result']['XXBTZUSD']
-    kraken_price = BitcoinPriceBase(
-        date=date.today(),  # Use the current date
+    kraken_price = BitcoinPriceResponse(
+        date=date.today().strftime("%Y-%m-%d"),  # Use the current date
         open=float(price_data['o'][0]),
         high=float(price_data['h'][0]),
         low=float(price_data['l'][0]),
@@ -185,13 +174,13 @@ def get_kraken_price():
     )
     return kraken_price
 
-@app.get("/prices/yahoo", response_model=List[BitcoinPriceBase])
+@app.get("/prices/yahoo", response_model=List[BitcoinPriceResponse])
 def get_yahoo_prices():
     logger.info("Endpoint /prices/yahoo was accessed")
     data = yf.download("BTC-USD", period="1y", interval="1d")
     yahoo_prices = []
     for index, row in data.iterrows():
-        yahoo_prices.append(BitcoinPriceBase(
+        yahoo_prices.append(BitcoinPriceResponse(
             date=index.strftime("%Y-%m-%d"),
             open=row['Open'],
             high=row['High'],
@@ -206,24 +195,41 @@ def get_yahoo_prices():
 async def startup_event():
     logger.info("Application startup: checking database connection...")
     try:
+        # Use environment variables for database credentials
         conn = psycopg2.connect(
-            dbname="Bitcoin_Prices_Database",
-            user="postgres",
-            password=os.getenv("DB_PASSWORD", "password"),
-            host="localhost",
-            port="5432"
+            dbname=POSTGRES_DB,
+            user=POSTGRES_USER,
+            password=POSTGRES_PASSWORD,
+            host=POSTGRES_HOST,
+            port=POSTGRES_PORT
         )
         conn.close()
         logger.info("Successfully connected to the database.")
-    except psycopg2.OperationalError as e:
-        logger.error(f"Database connection error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to connect to the database")
+        
+        # Create the tables in the database if they do not exist
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        logger.error(f"Failed to connect to the database: {e}")
+        raise HTTPException(status_code=500, detail="Database connection error")
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("Shutting down application...")
+@app.post("/load-csv/")
+def load_csv_endpoint(file_path: str):
+    logger.info(f"Endpoint /load-csv/ was accessed with file path: {file_path}")
+    load_csv_to_postgresql(file_path)
+    return {"message": "CSV data successfully loaded into the database"}
 
-# Run the FastAPI app using uvicorn
+def load_csv_to_postgresql(file_path: str):
+    import pandas as pd
+    from sqlalchemy import create_engine
+
+    try:
+        df = pd.read_csv(file_path)
+        df.to_sql('bitcoin_prices', con=engine, if_exists='append', index=False)
+        logger.info("CSV data successfully loaded into the database.")
+    except Exception as e:
+        logger.error(f"Failed to load CSV data into the database: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load CSV data")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
