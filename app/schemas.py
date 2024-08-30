@@ -13,3 +13,10 @@ class BitcoinPriceBase(BaseModel):
 
     class Config:
         orm_mode = True
+
+class BitcoinPriceCreate(BitcoinPriceBase):
+    pass
+
+class BitcoinPriceResponse(BitcoinPriceBase):
+    class Config:
+        orm_mode = True
