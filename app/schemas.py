@@ -1,8 +1,9 @@
+from typing import List
 from pydantic import BaseModel
 from datetime import date
+from app.schemas import Price 
 
-# Define Pydantic models for request and response handling
-class BitcoinPriceBase(BaseModel):
+class PriceBase(BaseModel):
     date: date
     open: float
     high: float
@@ -14,9 +15,11 @@ class BitcoinPriceBase(BaseModel):
     class Config:
         orm_mode = True
 
-class BitcoinPriceCreate(BitcoinPriceBase):
-    pass
+class Price(PriceBase):
+    id: int
 
-class BitcoinPriceResponse(BitcoinPriceBase):
+class PriceList(BaseModel):
+    prices: List[Price]
+
     class Config:
         orm_mode = True
