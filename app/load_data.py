@@ -1,29 +1,44 @@
-# load_data.py
 import pandas as pd
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from models import Base, BitcoinPrice
-from database import engine, SessionLocal
+from sqlalchemy.orm import Session
+from database import SessionLocal
+from models import BitcoinPrice, Base, engine
 
-# Load CSV file
-csv_file_path = "C:/Users/USER/Downloads/Bitcoin-Price-Analysis-API/data/BTC-USD Yahoo Finance - Max Yrs.csv"
+def load_csv_to_postgres(csv_file_path: str):
+    # Read CSV file
+    df = pd.read_csv(csv_file_path)
+    df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y')  # Convert to datetime
+    df['Volume'] = df['Volume'].str.replace(',', '').astype(int)  # Convert volume to integer
 
-df = pd.read_csv(csv_file_path)
-
-# Preprocess the data if necessary
-df['Date'] = pd.to_datetime(df['Date'])
-df.columns = [col.lower().replace(' ', '_') for col in df.columns]
-
-# Create tables
-Base.metadata.create_all(bind=engine)
-
-# Load data into PostgreSQL
-def load_data():
+    # Create database session
     session = SessionLocal()
+
     try:
-        df.to_sql('bitcoin_prices', con=engine, if_exists='append', index=False)
+        for index, row in df.iterrows():
+            record = BitcoinPrice(
+                date=row['Date'],
+                open=row['Open'],
+                high=row['High'],
+                low=row['Low'],
+                close=row['Close'],
+                adj_close=row['Adj Close'],
+                volume=row['Volume']
+            )
+            session.add(record)
+
+        session.commit()
+        print("Data committed successfully.")
+    except Exception as e:
+        print(f"Error: {e}")
+        session.rollback()
     finally:
         session.close()
 
 if __name__ == "__main__":
-    load_data()
+    # Create tables
+    Base.metadata.create_all(bind=engine)
+
+    # Path to your CSV file
+    csv_file_path = "C:/Users/USER/Downloads/Bitcoin-Price-Analysis-API/data/BTC-USD Yahoo Finance - Max Yrs.csv"
+
+    # Load data into PostgreSQL
+    load_csv_to_postgres(csv_file_path)

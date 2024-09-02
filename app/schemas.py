@@ -1,16 +1,16 @@
-# schemas.py
 from pydantic import BaseModel
+from typing import Optional
 from datetime import date
 
 class BitcoinPrice(BaseModel):
-    id: int
+    id: Optional[int]
     date: date
     open: float
     high: float
     low: float
     close: float
-    volume: float
-    market_cap: float
+    adj_close: float
+    volume: int
 
     class Config:
         orm_mode = True

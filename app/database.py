@@ -1,8 +1,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from typing import Generator
 
-# Hardcoded Database URL
 DATABASE_URL = "postgresql://postgres:Feenah413@localhost:5432/Bitcoin_Prices_Database"
 
 # Create SQLAlchemy engine
@@ -14,9 +14,14 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Base class for declarative models
 Base = declarative_base()
 
-def get_db():
+def get_db() -> Generator:
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+# Test connection
+with engine.connect() as connection:
+    result = connection.execute("SELECT 1")
+    print(result.fetchone())
