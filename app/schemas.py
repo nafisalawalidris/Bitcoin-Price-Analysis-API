@@ -1,25 +1,20 @@
-from typing import List
 from pydantic import BaseModel
 from datetime import date
-from app.schemas import Price 
 
-class PriceBase(BaseModel):
+class BitcoinPriceBase(BaseModel):
     date: date
     open: float
     high: float
     low: float
     close: float
-    adj_close: float
     volume: float
+    market_cap: float
 
-    class Config:
-        orm_mode = True
+class BitcoinPriceCreate(BitcoinPriceBase):
+    pass
 
-class Price(PriceBase):
+class BitcoinPriceRead(BitcoinPriceBase):
     id: int
-
-class PriceList(BaseModel):
-    prices: List[Price]
 
     class Config:
         orm_mode = True

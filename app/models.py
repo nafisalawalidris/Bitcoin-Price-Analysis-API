@@ -1,26 +1,17 @@
-from sqlalchemy import Column, Float, Date, Index
-from sqlalchemy.ext.declarative import declarative_base
-from .database import Base  # Import Base from your database setup file
+from sqlalchemy import Column, Integer, Float, Date
+from .database import Base
 
-Base = declarative_base()
-
-# Define a SQLAlchemy model for Bitcoin price data
 class BitcoinPrice(Base):
-    __tablename__ = "bitcoin_prices"
+    __tablename__ = "bitcoin_prices"  # Table name in the database
 
-    date = Column(Date, primary_key=True, nullable=False)
-    open = Column(Float, nullable=False)
-    high = Column(Float, nullable=False)
-    low = Column(Float, nullable=False)
-    close = Column(Float, nullable=False)
-    adj_close = Column(Float, nullable=False)
-    volume = Column(Float, nullable=False)  # Consider Integer if volume is always a whole number
-
-    # Creating an index on 'date' for faster queries
-    __table_args__ = (
-        Index('ix_date', 'date'),
-    )
+    id = Column(Integer, primary_key=True, index=True)  # Primary key
+    date = Column(Date, index=True)  # Date of the price
+    open = Column(Float)  # Opening price
+    high = Column(Float)  # Highest price of the day
+    low = Column(Float)  # Lowest price of the day
+    close = Column(Float)  # Closing price
+    volume = Column(Float)  # Volume of Bitcoin traded
+    market_cap = Column(Float)  # Market capitalization
 
     def __repr__(self):
-        return (f"<BitcoinPrice(date={self.date}, open={self.open}, high={self.high}, "
-                f"low={self.low}, close={self.close}, adj_close={self.adj_close}, volume={self.volume})>")
+        return f"<BitcoinPrice(id={self.id}, date={self.date}, open={self.open}, high={self.high}, low={self.low}, close={self.close}, volume={self.volume}, market_cap={self.market_cap})>"
