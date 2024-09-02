@@ -1,7 +1,9 @@
+# schemas.py
 from pydantic import BaseModel
 from datetime import date
 
-class BitcoinPriceBase(BaseModel):
+class BitcoinPrice(BaseModel):
+    id: int
     date: date
     open: float
     high: float
@@ -9,12 +11,6 @@ class BitcoinPriceBase(BaseModel):
     close: float
     volume: float
     market_cap: float
-
-class BitcoinPriceCreate(BitcoinPriceBase):
-    pass
-
-class BitcoinPriceRead(BitcoinPriceBase):
-    id: int
 
     class Config:
         orm_mode = True

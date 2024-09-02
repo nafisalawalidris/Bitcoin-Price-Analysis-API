@@ -1,57 +1,33 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends
 from typing import List
-from . import crud, schemas
-from .database import get_db
+from . import schemas, crud
 
 router = APIRouter()
 
-@router.get("/prices/", response_model=List[schemas.BitcoinPriceRead])
-def read_prices(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    return crud.get_prices(db, skip=skip, limit=limit)
+@router.get("/", response_model=dict)
+def read_root():
+    return {
+        "message": "Welcome to the Bitcoin Price Analysis API!",
+        "endpoints": {
+            "/prices/": "Retrieve all historical Bitcoin prices.",
+            "/prices/{year}": "Fetch Bitcoin prices for a specific year.",
+            "/prices/halving/{halving_number}": "Obtain Bitcoin prices around specific Bitcoin halving events.",
+            "/prices/halvings": "Retrieve Bitcoin prices across all halving periods."
+        }
+    }
 
-@router.get("/prices/{year}", response_model=List[schemas.BitcoinPriceRead])
-def read_prices_by_year(year: int, db: Session = Depends(get_db)):
-    prices = crud.get_prices_by_year(db, year)
-    if not prices:
-        raise HTTPException(status_code=404, detail="Prices not found for the specified year.")
-    return prices
+@router.get("/prices/", response_model=List[schemas.BitcoinPrice])
+def get_all_prices(db: Depends(crud.get_db)):
+    return crud.get_all_prices(db)
 
-@router.get("/prices/halving/{halving_number}", response_model=List[schemas.BitcoinPriceRead])
-def read_prices_by_halving(halving_number: int, db: Session = Depends(get_db)):
-    prices = crud.get_prices_by_halving(db, halving_number)
-    if not prices:
-        raise HTTPException(status_code=404, detail="Prices not found for the specified halving number.")
-    return prices
+@router.get("/prices/{year}", response_model=List[schemas.BitcoinPrice])
+def get_prices_by_year(year: int, db: Depends(crud.get_db)):
+    return crud.get_prices_by_year(db, year)
 
-@router.get("/prices/halvings", response_model=List[schemas.BitcoinPriceRead])
-def read_prices_across_halvings(db: Session = Depends(get_db)):
+@router.get("/prices/halving/{halving_number}", response_model=List[schemas.BitcoinPrice])
+def get_prices_by_halving(halving_number: int, db: Depends(crud.get_db)):
+    return crud.get_prices_by_halving(db, halving_number)
+
+@router.get("/prices/halvings", response_model=List[schemas.BitcoinPrice])
+def get_prices_across_halvings(db: Depends(crud.get_db)):
     return crud.get_prices_across_halvings(db)
-
-@router.get("/prices/bybit")
-def get_latest_bybit_price():
-    return crud.get_bybit_prices()
-
-@router.get("/prices/binance")
-def get_latest_binance_price():
-    return crud.get_binance_prices()
-
-@router.get("/prices/kraken")
-def get_latest_kraken_price():
-    return crud.get_kraken_prices()
-
-@router.get("/prices/yahoo")
-def get_latest_yahoo_price():
-    return crud.get_yahoo_prices()
-
-@router.get("/prices/luno")
-def get_latest_luno_price():
-    return crud.get_luno_prices()
-
-@router.get("/prices/remitano")
-def get_latest_remitano_price():
-    return crud.get_remitano_prices()
-
-@router.get("/prices/kucoin")
-def get_latest_kucoin_price():
-    return crud.get_kucoin_prices()

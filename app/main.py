@@ -1,18 +1,13 @@
+# main.py
 from fastapi import FastAPI
+from . import routes
 from .database import engine
-from . import models, routes
+from .routes import router as price_router
 
 app = FastAPI()
 
-# Include the API routers
+# Create tables
+models.Base.metadata.create_all(bind=engine)
+
+# Include router
 app.include_router(routes.router)
-
-@app.on_event("startup")
-async def on_startup():
-    # Initialize the database (only if needed; typically handled separately)
-    from .init_db import init_db
-    init_db()
-
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to the Bitcoin Price API"}

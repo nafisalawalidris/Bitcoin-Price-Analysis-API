@@ -1,14 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import os
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Database URL from environment variables
-DATABASE_URL = os.getenv("DATABASE_URL")
+# Hardcoded Database URL
+DATABASE_URL = "postgresql://postgres:Feenah413@localhost:5432/Bitcoin_Prices_Database"
 
 # Create SQLAlchemy engine
 engine = create_engine(DATABASE_URL)
