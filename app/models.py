@@ -1,16 +1,14 @@
-from sqlalchemy import Column, Date, Float, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from sqlalchemy import Column, Integer, String, Float, DateTime
+from .database import Base
 
 class BitcoinPrice(Base):
-    __tablename__ = 'bitcoin_prices'
+    __tablename__ = "bitcoin_prices"
 
     id = Column(Integer, primary_key=True, index=True)
-    date = Column(Date, index=True)
+    date = Column(DateTime, index=True)
     open = Column(Float)
     high = Column(Float)
     low = Column(Float)
     close = Column(Float)
     adj_close = Column(Float)
-    volume = Column(Integer)
+    volume = Column(Float)

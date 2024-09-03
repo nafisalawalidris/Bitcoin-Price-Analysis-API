@@ -1,16 +1,20 @@
 from pydantic import BaseModel
-from typing import Optional
-from datetime import date
+from datetime import datetime
 
-class BitcoinPrice(BaseModel):
-    id: Optional[int]
-    date: date
+class BitcoinPriceBase(BaseModel):
+    date: datetime
     open: float
     high: float
     low: float
     close: float
     adj_close: float
-    volume: int
+    volume: float
+
+class BitcoinPriceCreate(BitcoinPriceBase):
+    pass
+
+class BitcoinPrice(BitcoinPriceBase):
+    id: int
 
     class Config:
         orm_mode = True

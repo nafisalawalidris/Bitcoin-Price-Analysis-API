@@ -1,44 +1,34 @@
 import pandas as pd
 from sqlalchemy.orm import Session
-from database import SessionLocal
-from models import BitcoinPrice, Base, engine
+from . import crud, schemas, models
+from .database import SessionLocal, engine
 
-def load_csv_to_postgres(csv_file_path: str):
-    # Read CSV file
-    df = pd.read_csv(csv_file_path)
-    df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y')  # Convert to datetime
-    df['Volume'] = df['Volume'].str.replace(',', '').astype(int)  # Convert volume to integer
+# Create the database tables
+models.Base.metadata.create_all(bind=engine)
 
-    # Create database session
-    session = SessionLocal()
+def load_csv_to_db(csv_file: str):
+    # Load data from CSV using pandas
+    df = pd.read_csv(csv_file, parse_dates=['Date'])
 
-    try:
-        for index, row in df.iterrows():
-            record = BitcoinPrice(
-                date=row['Date'],
-                open=row['Open'],
-                high=row['High'],
-                low=row['Low'],
-                close=row['Close'],
-                adj_close=row['Adj Close'],
-                volume=row['Volume']
-            )
-            session.add(record)
+    # Convert DataFrame to list of BitcoinPriceCreate schemas
+    prices = [
+        schemas.BitcoinPriceCreate(
+            date=row['Date'],
+            open=row['Open'],
+            high=row['High'],
+            low=row['Low'],
+            close=row['Close'],
+            adj_close=row['Adj Close'],
+            volume=row['Volume']
+        )
+        for index, row in df.iterrows()
+    ]
 
-        session.commit()
-        print("Data committed successfully.")
-    except Exception as e:
-        print(f"Error: {e}")
-        session.rollback()
-    finally:
-        session.close()
+    # Insert data into the database
+    db = SessionLocal()
+    for price in prices:
+        crud.create_price(db=db, price=price)
+    db.close()
 
-if __name__ == "__main__":
-    # Create tables
-    Base.metadata.create_all(bind=engine)
-
-    # Path to your CSV file
-    csv_file_path = "C:/Users/USER/Downloads/Bitcoin-Price-Analysis-API/data/BTC-USD Yahoo Finance - Max Yrs.csv"
-
-    # Load data into PostgreSQL
-    load_csv_to_postgres(csv_file_path)
+# Run the data load
+load_csv_to_db('data/BTC-USD Yahoo Finance - Max Yrs.csv')
