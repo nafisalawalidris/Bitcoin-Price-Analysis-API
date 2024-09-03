@@ -1,56 +1,44 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
 import pandas as pd
-import psycopg2
 
-# Define the database URL
+# Database connection URL, replace with your actual database credentials
 DATABASE_URL = "postgresql://postgres:Feenah413@localhost/Bitcoin_Prices_Database"
 
 # Create the SQLAlchemy engine
 engine = create_engine(DATABASE_URL)
 
-# Create a session maker
+# Create a configured "Session" class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Base class for SQLAlchemy models
+# Create a base class for the models
 Base = declarative_base()
 
-# Dependency for getting the database session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# Define the BitcoinPrice model
+class BitcoinPrice(Base):
+    __tablename__ = "bitcoin_prices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(DateTime, nullable=False)
+    open = Column(Float, nullable=False)
+    high = Column(Float, nullable=False)
+    low = Column(Float, nullable=False)
+    close = Column(Float, nullable=False)
+    adj_close = Column(Float, nullable=False)
+    volume = Column(Integer, nullable=False)
+
+# Create all tables in the database
+Base.metadata.create_all(bind=engine)
 
 # Function to load data into PostgreSQL
 def load_data_into_postgres(file_path: str):
     # Read and transform data
     df = pd.read_csv(file_path)
-    df = df.dropna()
-    df = df.rename(columns={'tpep_pickup_datetime': 'pickup_datetime', 'tpep_dropoff_datetime': 'dropoff_datetime'})
-    df['pickup_datetime'] = pd.to_datetime(df['pickup_datetime'])
-    df['dropoff_datetime'] = pd.to_datetime(df['dropoff_datetime'])
-    df['trip_duration'] = df['dropoff_datetime'] - df['pickup_datetime']
-    df['trip_duration_minutes'] = df['trip_duration'].dt.total_seconds() / 60
+    df = df.dropna()  # Dropping rows with missing values
 
-    # Connect to PostgreSQL and create the table if needed
-    with psycopg2.connect(DATABASE_URL) as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-            CREATE TABLE IF NOT EXISTS bitcoin_prices (
-                id SERIAL PRIMARY KEY,
-                date TIMESTAMP,
-                open FLOAT,
-                high FLOAT,
-                low FLOAT,
-                close FLOAT,
-                adj_close FLOAT,
-                volume FLOAT
-            );
-            """)
-            conn.commit()
+    # Convert date column to datetime type
+    df['date'] = pd.to_datetime(df['date'])
 
     # Load data into PostgreSQL
     try:

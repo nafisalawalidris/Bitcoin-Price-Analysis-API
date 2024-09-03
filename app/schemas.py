@@ -1,3 +1,5 @@
+# app/schemas.py
+
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -11,7 +13,7 @@ class BitcoinPriceBase(BaseModel):
     volume: float
 
 class BitcoinPriceCreate(BitcoinPriceBase):
-    pass
+    pass  
 
 class BitcoinPrice(BitcoinPriceBase):
     id: int

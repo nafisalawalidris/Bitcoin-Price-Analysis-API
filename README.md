@@ -81,7 +81,9 @@ uvicorn main:app --reload
 ``` 
 
 2. **Access the API documentation**: 
+```bash
 Open your browser and navigate to http://127.0.0.1:8000/docs to see the interactive Swagger UI documentation.
+```
 
 ### API Endpoints
 1. **Historical Data Endpoints**:
@@ -148,12 +150,13 @@ The API integrates with multiple cryptocurrency exchanges (Bybit, Binance, Krake
 
 ### Contributing
 Contributions are welcome! Please read the contributing guidelines for details on how to contribute.
+```bash
 - Fork the repository.
 - Create a new feature branch (git checkout -b feature-name).
 - Commit your changes (git commit -m 'Add some feature').
 - Push to the branch (git push origin feature-name).
 - Open a pull request.
-
+```
 ### License
 This project is licensed under the MIT License. See the LICENSE file for details.
 
