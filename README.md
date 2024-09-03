@@ -87,6 +87,7 @@ Open your browser and navigate to http://127.0.0.1:8000/docs to see the interact
 
 ### API Endpoints
 1. **Historical Data Endpoints**:
+```bash
 - GET /root/
 Description: Provides an overview of the API, including a list of available endpoints and their descriptions.
 
@@ -101,8 +102,10 @@ Description: Provides Bitcoin price data around specific halving events. The API
 
 - GET /prices/halvings
 Description: Retrieves Bitcoin prices across all halving periods.
+```
 
 2. **Real-Time Data Endpoints**:
+```bash
 - GET /prices/bybit
 Description: Fetches the latest Bitcoin price from the Bybit exchange.
 
@@ -117,13 +120,16 @@ Description: Retrieves the current Bitcoin price from the Coinbase exchange.
 
 - GET /prices/kucoin
 Description: Retrieves the current Bitcoin price from the Kucoin exchange.
+```
 
 3. **Additional Endpoint**:
+```bash
 - POST /prices/add
 Description: Allows adding new Bitcoin price data to the database. This endpoint requires data in JSON format, including details such as date, price and exchange.
 
 - GET /prices/statistics
 Description: Retrieves various statistics on Bitcoin prices, such as average price, highest price and lowest price over a specified period.
+```
 
 ### Database Setup
 - Data Acquisition: Historical Bitcoin price data is sourced from Yahoo Finance and saved as a CSV file. This data is cleaned and validated for accuracy.
