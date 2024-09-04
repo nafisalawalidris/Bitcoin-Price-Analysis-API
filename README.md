@@ -81,9 +81,8 @@ uvicorn main:app --reload
 ``` 
 
 2. **Access the API documentation**: 
-```bash
 Open your browser and navigate to http://127.0.0.1:8000/docs to see the interactive Swagger UI documentation.
-```
+
 
 ### API Endpoints
 1. **Historical Data Endpoints**:
