@@ -75,7 +75,7 @@ pip install -r requirements.txt
 - Update the DATABASE_URL in the .env file with your PostgreSQL connection string.
 
 ### Usage: Running the API
-1. **Start the FastAPI server**:
+1. **Start the FastAPI server**: 
 ```bash
 uvicorn main:app --reload
 ``` 

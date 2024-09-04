@@ -1,8 +1,8 @@
 import logging
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy import create_engine, extract
-from app.models import BitcoinPrice, Base
+from sqlalchemy import create_engine
+from app.models import BitcoinPrice
 from typing import List
 
 # Set up logging
@@ -10,6 +10,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
+
+# Database configuration
 SQLALCHEMY_DATABASE_URL = 'postgresql://postgres:Feenah413@localhost/Bitcoin_Prices_Database'
 
 # Set up the database connection
@@ -53,6 +55,26 @@ def get_prices_by_year(year: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No price data found for the specified year.")
     return {"prices": [price.to_dict() for price in prices]}
 
+@app.get("/prices/halvings")
+def get_prices_across_halvings(db: Session = Depends(get_db)):
+    logger.info("Fetching prices across all halving periods.")
+    halving_dates = [
+        {"date": "2012-11-28", "start": "2012-09-01", "end": "2013-02-28"},
+        {"date": "2016-07-09", "start": "2016-04-01", "end": "2016-10-31"},
+        {"date": "2020-05-11", "start": "2020-02-01", "end": "2020-08-31"},
+        {"date": "2024-04-19", "start": "2024-02-01", "end": "2024-08-31"}
+    ]
+    
+    prices = []
+    for halving in halving_dates:
+        halving_prices = db.query(BitcoinPrice).filter(
+            BitcoinPrice.date.between(halving["start"], halving["end"])
+        ).all()
+        prices.extend(halving_prices)
+    
+    return {"prices": [price.to_dict() for price in prices]}
+
+
 @app.get("/prices/halving/{halving_number}")
 def get_prices_around_halving(halving_number: int, db: Session = Depends(get_db)):
     logger.info(f"Fetching prices around halving event number: {halving_number}.")
@@ -73,30 +95,5 @@ def get_prices_around_halving(halving_number: int, db: Session = Depends(get_db)
     
     if not prices:
         raise HTTPException(status_code=404, detail="No price data found around the specified halving event.")
-    
-    return {"prices": [price.to_dict() for price in prices]}
-
-@app.get("/prices/halvings")
-def get_prices_across_halvings(db: Session = Depends(get_db)):
-    logger.info("Fetching prices across all halving periods.")
-    
-    halving_dates = [
-        {"date": "2012-11-28", "start": "2012-09-01", "end": "2013-02-28"},
-        {"date": "2016-07-09", "start": "2016-04-01", "end": "2016-10-31"},
-        {"date": "2020-05-11", "start": "2020-02-01", "end": "2020-08-31"}
-    ]
-    
-    prices = []
-    
-    try:
-        for halving in halving_dates:
-            halving_prices = db.query(BitcoinPrice).filter(
-                BitcoinPrice.date.between(halving["start"], halving["end"])
-            ).all()
-            prices.extend(halving_prices)
-    
-    except SQLAlchemyError as e:
-        logger.error(f"Database error: {e}")
-        raise HTTPException(status_code=500, detail="Internal Server Error")
     
     return {"prices": [price.to_dict() for price in prices]}
