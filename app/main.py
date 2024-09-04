@@ -6,14 +6,8 @@ from typing import List
 
 app = FastAPI()
 
-# Database setup
-DATABASE_URL = "sqlite:///./test.db"  # Update with your actual database URL
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+# Set up the database connection
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create tables
-Base.metadata.create_all(bind=engine)
-
 def get_db():
     db = SessionLocal()
     try:
