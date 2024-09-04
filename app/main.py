@@ -1,16 +1,19 @@
+from fastapi import FastAPI, HTTPException, Depends
+from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy import create_engine, extract
+from app.models import BitcoinPrice, Base
 from typing import List
-from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy.orm import Session
-from . import crud, models, schemas
-from .database import SessionLocal, engine, Base
 
-# Create FastAPI instance
 app = FastAPI()
+
+# Database setup
+DATABASE_URL = "sqlite:///./test.db"  # Update with your actual database URL
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Create tables
 Base.metadata.create_all(bind=engine)
 
-# Dependency for getting the database session
 def get_db():
     db = SessionLocal()
     try:
@@ -18,16 +21,14 @@ def get_db():
     finally:
         db.close()
 
-# Define endpoints here
 @app.get("/")
 def read_root():
-    print("Successfully")
     return {"message": "Welcome to the Bitcoin Price API"}
 
 @app.get("/root/")
 def read_root_details():
-    print("Successfully")
     return {
+        "overview": "This API provides various endpoints to access historical Bitcoin price data.",
         "endpoints": {
             "/prices/": "Retrieves all historical Bitcoin prices",
             "/prices/{year}": "Fetches Bitcoin prices for a specific year",
@@ -36,42 +37,54 @@ def read_root_details():
         }
     }
 
-@app.get("/prices/", response_model=List[schemas.BitcoinPrice])
+@app.get("/prices/")
 def get_all_prices(db: Session = Depends(get_db)):
-    print("All prices successfully fetched from Postgres database")
-    return crud.get_all_prices(db=db)
+    prices = db.query(BitcoinPrice).all()
+    return {"prices": [price.to_dict() for price in prices]}
 
-@app.get("/prices/{year}", response_model=List[schemas.BitcoinPrice])
-def get_prices(year: int, db: Session = Depends(get_db)):
-    # Use the CRUD function to fetch prices by year
-    prices = crud.get_prices_by_year(db=db, year=year)
-    print("Successfully displayed bitcoin prices per year from 2014 to 2024 fetched from Postgres database")
-    return prices
-
-HALVING_DATES = {
-    1: "2012-11-28",
-    2: "2016-07-09",
-    3: "2020-05-11",
-    4: "2024-04-19"  
-}
+@app.get("/prices/{year}")
+def get_prices_by_year(year: int, db: Session = Depends(get_db)):
+    prices = db.query(BitcoinPrice).filter(extract('year', BitcoinPrice.date) == year).all()
+    if not prices:
+        raise HTTPException(status_code=404, detail="No price data found for the specified year.")
+    return {"prices": [price.to_dict() for price in prices]}
 
 @app.get("/prices/halving/{halving_number}")
-def get_prices_by_halving_endpoint(halving_number: int, db: Session = Depends(get_db)):
-    if halving_number not in HALVING_DATES:
-        raise HTTPException(status_code=404, detail="Halving number not found")
+def get_prices_around_halving(halving_number: int, db: Session = Depends(get_db)):
+    halving_dates = {
+        1: {"date": "2012-11-28", "start": "2012-09-01", "end": "2013-02-28"},
+        2: {"date": "2016-07-09", "start": "2016-04-01", "end": "2016-10-31"},
+        3: {"date": "2020-05-11", "start": "2020-02-01", "end": "2020-08-31"},
+        4: {"date": "2024-04-19", "start": "2024-02-01", "end": "2024-08-31"}  
+    }
     
-    try:
-        prices = crud.get_prices_by_halving(db=db, halving_number=halving_number)
-        print("Successfully displayed bitcoin prices by halving number from 2014 to 2024 fetched from Postgres database")
-        return prices
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    if halving_number not in halving_dates:
+        raise HTTPException(status_code=404, detail="Invalid halving number.")
+    
+    dates = halving_dates[halving_number]
+    prices = db.query(BitcoinPrice).filter(
+        BitcoinPrice.date.between(dates["start"], dates["end"])
+    ).all()
+    
+    if not prices:
+        raise HTTPException(status_code=404, detail="No price data found around the specified halving event.")
+    
+    return {"prices": [price.to_dict() for price in prices]}
 
-@app.get("/prices/halvings", response_model=List[schemas.BitcoinPrice])
+@app.get("/prices/halvings")
 def get_prices_across_halvings(db: Session = Depends(get_db)):
-    try:
-        prices = crud.get_prices_across_halvings(db=db)
-        print("Successfully displayed bitcoin prices across all the 4 halvings from 2014 to 2024 fetched from Postgres database")
-        return prices
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    halving_dates = [
+        {"date": "2012-11-28", "start": "2012-09-01", "end": "2013-02-28"},
+        {"date": "2016-07-09", "start": "2016-04-01", "end": "2016-10-31"},
+        {"date": "2020-05-11", "start": "2020-02-01", "end": "2020-08-31"},
+        {"date": "2024-04-19", "start": "2024-02-01", "end": "2024-08-31"}  
+    ]
+    
+    prices = []
+    for halving in halving_dates:
+        halving_prices = db.query(BitcoinPrice).filter(
+            BitcoinPrice.date.between(halving["start"], halving["end"])
+        ).all()
+        prices.extend(halving_prices)
+    
+    return {"prices": [price.to_dict() for price in prices]}

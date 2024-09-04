@@ -1,26 +1,12 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, MetaData
+from sqlalchemy import Column, Float, Integer, Date
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 
-# Database connection URL, replace with your actual database credentials
-DATABASE_URL = "postgresql://postgres:Feenah413@localhost/Bitcoin_Prices_Database"
-
-# Create the SQLAlchemy engine
-engine = create_engine(DATABASE_URL)
-
-# Create a configured "Session" class
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create a base class for the models
 Base = declarative_base()
 
-# Define the BitcoinPrice model
 class BitcoinPrice(Base):
-    __tablename__ = "bitcoin_prices"
-    __table_args__ = {'extend_existing': True}  # Add this line
+    __tablename__ = 'bitcoin_prices'
 
-    id = Column(Integer, primary_key=True, index=True)
-    date = Column(DateTime, nullable=False)
+    date = Column(Date, primary_key=True)
     open = Column(Float, nullable=False)
     high = Column(Float, nullable=False)
     low = Column(Float, nullable=False)
@@ -28,6 +14,13 @@ class BitcoinPrice(Base):
     adj_close = Column(Float, nullable=False)
     volume = Column(Integer, nullable=False)
 
-# Create all tables in the database
-Base.metadata.create_all(bind=engine)
-
+    def to_dict(self):
+        return {
+            "date": self.date.strftime('%Y-%m-%d'),
+            "open": self.open,
+            "high": self.high,
+            "low": self.low,
+            "close": self.close,
+            "adj_close": self.adj_close,
+            "volume": self.volume
+        }
