@@ -99,10 +99,6 @@ Description: Fetches Bitcoin prices for a specific year by providing the year as
 - GET /prices/halving/{halving_number}
 Description: Provides Bitcoin price data around specific halving events. The API returns a JSON response containing Bitcoin prices before, during and after the specified halving event.
 
-- GET /prices/halvings
-Description: Retrieves Bitcoin prices across all halving periods.
-```
-
 2. **Real-Time Data Endpoints**:
 ```bash
 - GET /prices/bybit
@@ -110,9 +106,6 @@ Description: Fetches the latest Bitcoin price from the Bybit exchange.
 
 -GET /prices/binance
 Description: Retrieves the most recent Bitcoin price from the Binance exchange.
-
--GET /prices/kraken
-Description: Provides the latest Bitcoin price from the Kraken exchange.
 
 - GET /prices/coinbase
 Description: Retrieves the current Bitcoin price from the Coinbase exchange.
