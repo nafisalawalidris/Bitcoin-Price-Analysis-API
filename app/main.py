@@ -1,17 +1,45 @@
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy import create_engine, extract
-from app.models import BitcoinPrice
-from app.database import get_db 
-from typing import List
+from app.models import BitcoinPrice, Base
+from app.database import get_db
 import logging
-import pandas as pd  
+from pydantic import BaseModel
+from typing import List, Optional
+
+
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
+# Define response models
+class Price(BaseModel):
+    date: str
+    open: float
+    high: float
+    low: float
+    close: float
+    adj_close: float
+    volume: int
+
+class HalvingPricesResponse(BaseModel):
+    halving_number: int
+    prices: List[Price]
+
+# Create FastAPI instance
+app = FastAPI(
+    title="Bitcoin Price Analysis and Real-Time Data API",
+    version="0.1.0",
+    description="The Bitcoin Price Analysis and Real-Time Data API is an open-source API project designed to provide accurate, up-to-date and comprehensive Bitcoin pricing data for developers, researchers and financial analysts. Built on the robust FastAPI framework, this API offers seamless integration and high-performance endpoints for users who require real-time and historical Bitcoin price information. With Bitcoin being one of the most volatile and widely traded digital assets access to reliable price data is critical for informed decision-making in trading, investment and market analysis. This API serves as a one-stop solution delivering data in a highly organised format that is easy to consume and use in various applications.",
+    contact={
+        "name": "Nafisa Lawal Idris",
+        "portfolio": "https://nafisalawalidris.github.io/13/",
+    },
+    license_info={
+        "name": "MIT",
+    },
+)
 
 # Database configuration
 SQLALCHEMY_DATABASE_URL = 'postgresql://postgres:Feenah413@localhost/Bitcoin_Prices_Database'
@@ -20,12 +48,24 @@ SQLALCHEMY_DATABASE_URL = 'postgresql://postgres:Feenah413@localhost/Bitcoin_Pri
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# Dependency
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+# Event handlers for startup and shutdown
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Starting up the application.")
+    # Add any startup logic here
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("Shutting down the application.")
+    # Add any shutdown logic here
 
 @app.get("/")
 def read_root():
@@ -38,8 +78,7 @@ def read_root_details():
         "endpoints": {
             "/prices/": "Retrieves all historical Bitcoin prices",
             "/prices/{year}": "Fetches Bitcoin prices for a specific year",
-            "/prices/halving/{halving_number}": "Provides Bitcoin price data around specific halving events",
-            "/prices/halvings": "Retrieves Bitcoin prices across all halving periods"
+            "/prices/halving/{halving_number}": "Provides Bitcoin price data around specific halving events"
         }
     }
 
@@ -60,6 +99,8 @@ def get_prices_by_year(year: int, db: Session = Depends(get_db)):
 @app.get("/prices/halving/{halving_number}")
 def read_prices_around_halving(halving_number: int, db: Session = Depends(get_db)):
     logger.info(f"Fetching prices around halving number: {halving_number}")
+    
+    # Define the halving dates
     halving_dates = {
         1: {"date": "2012-11-28", "start": "2012-09-01", "end": "2013-02-28"},
         2: {"date": "2016-07-09", "start": "2016-04-01", "end": "2016-10-31"},
@@ -67,6 +108,7 @@ def read_prices_around_halving(halving_number: int, db: Session = Depends(get_db
         4: {"date": "2024-04-19", "start": "2024-02-01", "end": "2024-08-31"}
     }
 
+    # Check if the halving number is valid
     if halving_number not in halving_dates:
         logger.error(f"Halving event {halving_number} not found")
         raise HTTPException(status_code=404, detail="Halving event not found")
@@ -77,9 +119,14 @@ def read_prices_around_halving(halving_number: int, db: Session = Depends(get_db
     
     logger.info(f"Date range: {date_range_start} to {date_range_end}")
     
-    prices = db.query(BitcoinPrice).filter(
-        BitcoinPrice.date.between(date_range_start, date_range_end)
-    ).all()
+    try:
+        # Query the database
+        prices = db.query(BitcoinPrice).filter(
+            BitcoinPrice.date.between(date_range_start, date_range_end)
+        ).all()
+    except Exception as e:
+        logger.error(f"Database query failed: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
     if not prices:
         logger.error("No price data available for the specified halving event")
