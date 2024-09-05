@@ -98,6 +98,7 @@ Description: Fetches Bitcoin prices for a specific year by providing the year as
 
 - GET /prices/halving/{halving_number}
 Description: Provides Bitcoin price data around specific halving events. The API returns a JSON response containing Bitcoin prices before, during and after the specified halving event.
+```
 
 2. **Real-Time Data Endpoints**:
 ```bash
