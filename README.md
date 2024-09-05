@@ -130,7 +130,7 @@ Description: Retrieves various statistics on Bitcoin prices, such as average pri
 - Database Population: Use scripts to populate the database with historical data.
 
 ### Real-Time Data Integration
-The API integrates with multiple cryptocurrency exchanges (Bybit, Binance, Kraken, Kucoin and Coinbase) to provide real-time Bitcoin prices. This allows for up-to-date market analysis and decision-making.
+The API integrates with multiple cryptocurrency exchanges (Bybit, Binance, Kucoin and Coinbase) to provide real-time Bitcoin prices. This allows for up-to-date market analysis and decision-making.
 
 ### API Implementation and Deployment
 - FastAPI: Chosen for its speed and ease of use, supporting asynchronous programming, automatic documentation and data validation.
