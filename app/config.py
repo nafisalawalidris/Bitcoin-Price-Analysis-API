@@ -1,4 +1,8 @@
 from pydantic_settings import BaseSettings
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # Load environment variables from .env file
 
 class Settings(BaseSettings):
     database_username: str
@@ -7,14 +11,5 @@ class Settings(BaseSettings):
     database_port: int
     database_name: str
 
-    # Optional: Additional settings for the API
-    test_database_name: str = "Bitcoin_Prices_Database_test"  # Default test database name
-    api_key: str = None  # Example: for real-time data integration with exchanges
-    debug: bool = False  # Toggle debug mode
-
-    class Config:
-        env_file = ".env"  # Path to the environment variables file
-        env_prefix = "DB_"  # Prefix for environment variables to match class attributes
-
-# Initialize settings
 settings = Settings()
+print(os.getenv("DATABASE_USERNAME"))

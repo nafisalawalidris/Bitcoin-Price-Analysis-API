@@ -1,25 +1,24 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import extract
-from app.database import get_db
-from app.models import BitcoinPrice
-from app.schema import HalvingPricesResponse, Price
+from datetime import datetime
 from typing import List
 import logging
-from datetime import datetime
+
+from app.database import get_db
+from app.models.bitcoin_price import BitcoinPrice
+from app.schema import HalvingPricesResponse, Price
 
 # Set up logging
 logger = logging.getLogger(__name__)
 bitcoin_price_router = APIRouter()
 
-# Route Handlers
-
-@bitcoin_price_router.get("/")
+@bitcoin_price_router.get("/", summary="Root Endpoint")
 def read_root():
     logger.info("Accessed the root endpoint.")
     return {"message": "Welcome to the Bitcoin Price API. Please visit /api/0.1.0/prices/ for API endpoints."}
 
-@bitcoin_price_router.get("/root/")
+@bitcoin_price_router.get("/root/", summary="Root Details")
 def read_root_details():
     logger.info("Accessed the root details endpoint.")
     return {
@@ -31,7 +30,7 @@ def read_root_details():
         }
     }
 
-@bitcoin_price_router.get("/prices/", response_model=List[Price])
+@bitcoin_price_router.get("/prices/", response_model=List[Price], summary="Get All Historical Prices")
 def get_all_prices(db: Session = Depends(get_db)):
     logger.info("Fetching all historical prices.")
     try:
@@ -44,7 +43,7 @@ def get_all_prices(db: Session = Depends(get_db)):
         logger.error(f"Failed to fetch prices: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@bitcoin_price_router.get("/prices/{year}", response_model=List[Price])
+@bitcoin_price_router.get("/prices/{year}", response_model=List[Price], summary="Get Prices by Year")
 def get_prices_by_year(year: int, db: Session = Depends(get_db)):
     logger.info(f"Fetching prices for year: {year}.")
     try:
@@ -57,7 +56,7 @@ def get_prices_by_year(year: int, db: Session = Depends(get_db)):
         logger.error(f"Failed to fetch prices for year {year}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-@bitcoin_price_router.get("/prices/halving/{halving_number}", response_model=HalvingPricesResponse)
+@bitcoin_price_router.get("/prices/halving/{halving_number}", response_model=HalvingPricesResponse, summary="Get Prices Around Halving Events")
 def read_prices_around_halving(halving_number: int, db: Session = Depends(get_db)):
     logger.info(f"Fetching prices around halving number: {halving_number}.")
 
@@ -70,7 +69,7 @@ def read_prices_around_halving(halving_number: int, db: Session = Depends(get_db
     }
 
     if halving_number not in halving_dates:
-        logger.error(f"Halving event {halving_number} not found")
+        logger.error(f"Halving event {halving_number} not found.")
         raise HTTPException(status_code=404, detail="Halving event not found")
 
     date_range = halving_dates[halving_number]

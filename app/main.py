@@ -1,21 +1,39 @@
-import uvicorn
 from fastapi import FastAPI
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.config import settings  # Import settings from config file
-from app.routers import historical, real_time  # Import routers for different functionalities
-from app.database import Base  # Import the Base class for ORM
+import logging
+import os
+import uvicorn
+from app.routers import historical, real_time
+from app.database import Base
 
-# Create FastAPI instance
-app = FastAPI()
+# Set up logging configuration
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-# Database configuration using settings
-SQLALCHEMY_DATABASE_URL = (
-    f"postgresql://{settings.database_username}:{settings.database_password}@"
-    f"{settings.database_hostname}:{settings.database_port}/{settings.database_name}"
+# FastAPI instance with metadata
+app = FastAPI(
+    title="Bitcoin Price Analysis and Real-Time Data API",
+    version="0.1.0",
+    description=(
+        "The Bitcoin Price Analysis and Real-Time Data API is an open-source API project designed to provide "
+        "accurate, up-to-date and comprehensive Bitcoin pricing data for developers, researchers and financial "
+        "analysts. Built on the robust FastAPI framework, this API offers seamless integration and high-performance "
+        "endpoints for users who require real-time and historical Bitcoin price information. With Bitcoin being one of "
+        "the most volatile and widely traded digital assets, access to reliable price data is critical for informed "
+        "decision-making in trading, investment and market analysis. This API serves as a one-stop solution, delivering "
+        "data in a highly organised format that is easy to consume and use in various applications."
+    ),
+    contact={
+        "name": "Nafisa Lawal Idris",
+        "portfolio": "https://nafisalawalidris.github.io/13/",
+    },
+    license_info={
+        "name": "MIT",
+    },
 )
 
-# Create the SQLAlchemy engine and session
+# Database configuration
+SQLALCHEMY_DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:password@localhost/Bitcoin_Prices_Database')
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -27,21 +45,21 @@ def get_db():
     finally:
         db.close()
 
-# Include routers for better modularity
+# Include routers for different functionalities
 app.include_router(historical.router, prefix="/historical", tags=["Historical Data"])
 app.include_router(real_time.router, prefix="/real-time", tags=["Real-Time Data"])
 
-# Event handler to create database tables on startup (if necessary)
+# Event handler to create database tables on startup
 @app.on_event("startup")
 def startup_event():
-    # Create all tables in the database
     Base.metadata.create_all(bind=engine)
+    logging.info("Starting up the application.")
 
 # Event handler to run cleanup tasks on shutdown
 @app.on_event("shutdown")
 def shutdown_event():
+    logging.info("Shutting down the application.")
     # Add any necessary cleanup logic here
-    pass
 
 # Root endpoint
 @app.get("/")
