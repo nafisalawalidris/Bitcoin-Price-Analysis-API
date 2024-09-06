@@ -1,13 +1,31 @@
+from pydantic import BaseModel
+from typing import List
 import sys
 import os
 import logging
 from sqlalchemy import create_engine
 from sqlalchemy.exc import SQLAlchemyError
-from app.models import Base 
-from app.database import engine  
-from pydantic import BaseModel
-from typing import List
+from app.models import Base
+from app.database import engine  # Ensure this is correctly imported
+class Price(BaseModel):
+    date: str
+    open: float
+    high: float
+    low: float
+    close: float
+    adj_close: float
+    volume: int
 
+class HalvingPricesResponse(BaseModel):
+    halving_number: int
+    prices: List[Price]
+
+class StatisticsResponse(BaseModel):
+    min_price: float
+    max_price: float
+    avg_price: float
+    total_entries: int
+    
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,31 +44,4 @@ def create_schema():
 if __name__ == "__main__":
     create_schema()
 
-# Define Pydantic response models for your API
-class Price(BaseModel):
-    date: str
-    open: float
-    high: float
-    low: float
-    close: float
-    adj_close: float
-    volume: int
 
-class HalvingPricesResponse(BaseModel):
-    halving_number: int
-    prices: List[Price]
-
-from app.schema import create_schema
-
-def main():
-    """Initialize the database schema."""
-    try:
-        # Ensure create_schema() is properly defined and does the actual schema creation
-        create_schema()
-        print("Database schema created successfully.")
-    except Exception as e:
-        # Provide detailed error information for easier debugging
-        print(f"An error occurred while creating the schema: {e}")
-
-if __name__ == "__main__":
-    main()

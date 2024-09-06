@@ -4,9 +4,9 @@ from sqlalchemy.orm import sessionmaker
 import logging
 import os
 import uvicorn
-from app.routers import historical, real_time
+from app.routers import real_time
+from app.routers.historical import bitcoin_price_router
 from app.database import Base
-from app.routers import auth
 
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -47,10 +47,8 @@ def get_db():
         db.close()
 
 # Include routers for different functionalities
-app.include_router(real_time.real_time_router)
-app.include_router(auth.router, prefix="/auth", tags=["auth"])
-app.include_router(historical.router, prefix="/historical", tags=["Historical Data"])
-app.include_router(real_time.router, prefix="/real-time", tags=["Real-Time Data"])
+app.include_router(bitcoin_price_router, prefix="/historical", tags=["Historical Data"])
+app.include_router(real_time.real_time_router, prefix="/real-time", tags=["Real-Time Data"])
 
 # Event handler to create database tables on startup
 @app.on_event("startup")
@@ -64,11 +62,60 @@ def shutdown_event():
     logging.info("Shutting down the application.")
     # Add any necessary cleanup logic here
 
-# Root endpoint
-@app.get("/")
+# Root endpoint for general information
+@app.get("/", summary="Root Endpoint")
 def root():
     return {"message": "Welcome to the Bitcoin Price Analysis and Real-Time Data API"}
 
+# Root details endpoint
+@app.get("/api/0.1.0/root/", tags=["Root"], summary="Root Details")
+def read_root_details():
+    return {
+        "overview": "This API provides various endpoints to access historical Bitcoin price data.",
+        "endpoints": [
+            {
+                "path": "/api/0.1.0/prices/statistics",
+                "description": "Retrieves various statistical insights about Bitcoin prices over a specified period."
+            },
+            {
+                "path": "/api/0.1.0/prices/",
+                "description": "Retrieves the complete historical dataset of Bitcoin prices from the database."
+            },
+            {
+                "path": "/api/0.1.0/prices/{year}",
+                "description": "Fetches Bitcoin price data for a specific year."
+            },
+            {
+                "path": "/api/0.1.0/prices/halving/{halving_number}",
+                "description": "Provides Bitcoin price data around a specific halving event."
+            },
+            {
+                "path": "/api/0.1.0/prices/bybit",
+                "description": "Fetches the most recent Bitcoin price from the Bybit exchange."
+            },
+            {
+                "path": "/api/0.1.0/prices/binance",
+                "description": "Retrieves the latest Bitcoin price from the Binance exchange."
+            },
+            {
+                "path": "/api/0.1.0/prices/kraken",
+                "description": "Provides the latest Bitcoin price from the Kraken exchange."
+            },
+            {
+                "path": "/api/0.1.0/prices/coinbase",
+                "description": "Retrieves the current Bitcoin price from the Coinbase exchange."
+            },
+            {
+                "path": "/api/0.1.0/prices/kucoin",
+                "description": "Fetches the latest Bitcoin price from the KuCoin exchange."
+            },
+            {
+                "path": "/api/0.1.0/root/",
+                "description": "Provides information about the root of the API, including available endpoints and their descriptions."
+            }
+        ]
+    }
+
 # Main entry point for running the app
 if __name__ == "__main__":
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)

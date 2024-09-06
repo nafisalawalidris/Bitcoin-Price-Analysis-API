@@ -2,9 +2,12 @@ from fastapi import APIRouter, HTTPException
 import requests
 import logging
 
-# Set up logging
-logger = logging.getLogger(__name__)
 real_time_router = APIRouter()
+
+@real_time_router.get("/some_endpoint")
+def some_endpoint():
+    return {"message": "This is a real-time bitcoin prices endpoint"}
+
 
 # Define API endpoints for each exchange
 BYBIT_API_URL = "https://api.bybit.com/v2/public/tickers?symbol=BTCUSD"
