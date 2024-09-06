@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_DATABASE_USERNAME=postgres
+      - DB_DATABASE_PASSWORD=Feenah413
+      - DB_DATABASE_HOSTNAME=localhost
+      - DB_DATABASE_PORT=5432
+      - DB_DATABASE_NAME=Bitcoin_Prices_Database
+    volumes:
+      - .:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload

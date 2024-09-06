@@ -2,23 +2,55 @@ import sys
 import os
 import logging
 from sqlalchemy import create_engine
-from app.models import Base  # Ensure that Base is correctly defined in app.models
-from app.database import engine  # Ensure that engine is correctly defined in app.database
+from sqlalchemy.exc import SQLAlchemyError
+from app.models import Base 
+from app.database import engine  
+from pydantic import BaseModel
+from typing import List
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Add the 'app' directory to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 def create_schema():
+    """Create all tables defined in the Base metadata."""
     try:
-        # Create all tables defined in the Base metadata
         Base.metadata.create_all(bind=engine)
         logger.info("Database schema created successfully.")
-    except Exception as e:
+    except SQLAlchemyError as e:
         logger.error(f"An error occurred while creating the database schema: {e}")
+        logger.debug(e, exc_info=True)
 
 if __name__ == "__main__":
     create_schema()
+
+# Define Pydantic response models for your API
+class Price(BaseModel):
+    date: str
+    open: float
+    high: float
+    low: float
+    close: float
+    adj_close: float
+    volume: int
+
+class HalvingPricesResponse(BaseModel):
+    halving_number: int
+    prices: List[Price]
+
+from app.schema import create_schema
+
+def main():
+    """Initialize the database schema."""
+    try:
+        # Ensure create_schema() is properly defined and does the actual schema creation
+        create_schema()
+        print("Database schema created successfully.")
+    except Exception as e:
+        # Provide detailed error information for easier debugging
+        print(f"An error occurred while creating the schema: {e}")
+
+if __name__ == "__main__":
+    main()
