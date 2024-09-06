@@ -1,2 +1,4 @@
-# app/models/__init__.py
-from .bitcoin_price import BitcoinPrice  # Ensure this matches the actual file and class name
+from .bitcoin_price import BitcoinPrice
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()

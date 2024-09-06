@@ -6,6 +6,7 @@ import os
 import uvicorn
 from app.routers import historical, real_time
 from app.database import Base
+from app.routers import auth
 
 # Set up logging configuration
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -46,6 +47,8 @@ def get_db():
         db.close()
 
 # Include routers for different functionalities
+app.include_router(real_time.real_time_router)
+app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(historical.router, prefix="/historical", tags=["Historical Data"])
 app.include_router(real_time.router, prefix="/real-time", tags=["Real-Time Data"])
 

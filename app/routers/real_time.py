@@ -1,9 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 import requests
 import logging
-
-from app.database import get_db
-from app.models.prices import BitcoinPrice
 
 # Set up logging
 logger = logging.getLogger(__name__)
