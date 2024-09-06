@@ -31,7 +31,7 @@ The Bitcoin Price Analysis and Real-Time Data API offers a comprehensive solutio
 ## Features
 
 - **Historical Data Retrieval**: Fetch daily Bitcoin prices for any year between 2013 and 2024.
-- **Real-Time Data Access**: Get the latest Bitcoin prices from major exchanges like Bybit, Binance, Kraken and Coinbase.
+- **Real-Time Data Access**: Get the latest Bitcoin prices from major exchanges like Bybit, Binance, Kraken, and Coinbase.
 - **API Endpoints**: A range of endpoints for accessing Bitcoin prices, including those around halving events.
 - **Scalable and Efficient**: Built with FastAPI and PostgreSQL to handle large datasets and provide fast responses.
 
@@ -50,17 +50,16 @@ The Bitcoin Price Analysis and Real-Time Data API offers a comprehensive solutio
 - PostgreSQL database
 - Git
 
-
 ### Installation
+
 1. **Clone the repository**:
-```bash   
-git clone https://github.com/yourusername/Bitcoin-Price-Analysis-API.git
-cd Bitcoin-Price-Analysis-API
-``` 
+   ```bash   
+   git clone https://github.com/yourusername/Bitcoin-Price-Analysis-API.git
+   cd Bitcoin-Price-Analysis-API
+   ```
 
 2. **Create a virtual environment**:
 ```bash
-
 python3 -m venv venv
 source venv/bin/activate  # On Windows use `venv\Scripts\activate`
 ``` 
@@ -88,40 +87,31 @@ Open your browser and navigate to http://127.0.0.1:8000/docs to see the interact
 1. **Historical Data Endpoints**:
 ```bash
 - GET /root/
-Description: Provides an overview of the API, including a list of available endpoints and their descriptions.
+  Description: Provides an overview of the API, including a list of available endpoints and their descriptions.
 
 - GET /prices/
-Description: Retrieves all historical Bitcoin prices from the PostgreSQL database. Returns a JSON response containing a complete dataset of price information.
+  Description: Retrieves all historical Bitcoin prices from the PostgreSQL database. Returns a JSON response containing a complete dataset of price information.
 
 - GET /prices/{year}
-Description: Fetches Bitcoin prices for a specific year by providing the year as a parameter in the URL. The API returns a JSON response with the price data for the specified year.
+  Description: Fetches Bitcoin prices for a specific year by providing the year as a parameter in the URL. The API returns a JSON response with the price data for the specified year.
 
 - GET /prices/halving/{halving_number}
-Description: Provides Bitcoin price data around specific halving events. The API returns a JSON response containing Bitcoin prices before, during and after the specified halving event.
+  Description: Provides Bitcoin price data around specific halving events. The API returns a JSON response containing Bitcoin prices before, during and after the specified halving event.
 ```
 
 2. **Real-Time Data Endpoints**:
 ```bash
 - GET /prices/bybit
-Description: Fetches the latest Bitcoin price from the Bybit exchange.
+  Description: Fetches the latest Bitcoin price from the Bybit exchange.
 
--GET /prices/binance
-Description: Retrieves the most recent Bitcoin price from the Binance exchange.
+- GET /prices/binance
+  Description: Retrieves the most recent Bitcoin price from the Binance exchange.
 
 - GET /prices/coinbase
-Description: Retrieves the current Bitcoin price from the Coinbase exchange.
+  Description: Retrieves the current Bitcoin price from the Coinbase exchange.
 
 - GET /prices/kucoin
-Description: Retrieves the current Bitcoin price from the Kucoin exchange.
-```
-
-3. **Additional Endpoint**:
-```bash
-- POST /prices/add
-Description: Allows adding new Bitcoin price data to the database. This endpoint requires data in JSON format, including details such as date, price and exchange.
-
-- GET /prices/statistics
-Description: Retrieves various statistics on Bitcoin prices, such as average price, highest price and lowest price over a specified period.
+  Description: Retrieves the current Bitcoin price from the Kucoin exchange.
 ```
 
 ### Database Setup
