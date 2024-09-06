@@ -4,11 +4,6 @@ import logging
 
 real_time_router = APIRouter()
 
-@real_time_router.get("/some_endpoint")
-def some_endpoint():
-    return {"message": "This is a real-time bitcoin prices endpoint"}
-
-
 # Define API endpoints for each exchange
 BYBIT_API_URL = "https://api.bybit.com/v2/public/tickers?symbol=BTCUSD"
 BINANCE_API_URL = "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"

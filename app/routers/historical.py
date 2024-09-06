@@ -1,48 +1,33 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy.sql import extract
+from sqlalchemy import func, extract
+from typing import Dict, List, Any
 from datetime import datetime
-from typing import List, Dict, Any
 import logging
 
 from app.database import get_db
 from app.models.bitcoin_price import BitcoinPrice
-from app.schema import HalvingPricesResponse, Price
+from app.schema import StatisticsResponse, Price, HalvingPricesResponse
 
 # Set up logging
 logger = logging.getLogger(__name__)
 bitcoin_price_router = APIRouter()
 
 @bitcoin_price_router.get("/prices/", response_model=List[Price], summary="Get All Historical Prices")
-def get_all_prices(db: Session = Depends(get_db)) -> Dict[str, Any]:
-    """Fetch all historical Bitcoin prices from the database."""
+def get_all_prices(db: Session = Depends(get_db)):
     logger.info("Fetching all historical prices.")
     try:
         prices = db.query(BitcoinPrice).all()
         if not prices:
-            logger.warning("No historical prices found.")
+            logger.warning("No prices found in the database.")
             return {"prices": []}
         return {"prices": [price.to_dict() for price in prices]}
     except Exception as e:
-        logger.error(f"Error fetching all historical prices: {e}")
+        logger.error(f"Failed to fetch prices: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
-    
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-from typing import Dict, Any
-import logging
-
-from app.database import get_db
-from app.models.bitcoin_price import BitcoinPrice
-from app.schema import StatisticsResponse
-
-# Set up logging
-logger = logging.getLogger(__name__)
-bitcoin_price_router = APIRouter()
 
 @bitcoin_price_router.get("/prices/statistics", response_model=StatisticsResponse, summary="Get Bitcoin Price Statistics")
-def get_price_statistics(db: Session = Depends(get_db)) -> Dict[str, Any]:
+def get_price_statistics(db: Session = Depends(get_db)) -> StatisticsResponse:
     """Retrieve various statistical insights about Bitcoin prices over a specified period."""
     logger.info("Fetching Bitcoin price statistics.")
     try:
@@ -58,18 +43,17 @@ def get_price_statistics(db: Session = Depends(get_db)) -> Dict[str, Any]:
             logger.warning("No price statistics available.")
             raise HTTPException(status_code=404, detail="No price statistics available.")
 
-        statistics = {
-            "min_price": price_data.min_price,
-            "max_price": price_data.max_price,
-            "avg_price": price_data.avg_price,
-            "total_entries": price_data.total_entries
-        }
+        statistics = StatisticsResponse(
+            min_price=price_data.min_price,
+            max_price=price_data.max_price,
+            avg_price=price_data.avg_price,
+            total_entries=price_data.total_entries
+        )
 
-        return {"statistics": statistics}
+        return statistics
     except Exception as e:
         logger.error(f"Error fetching price statistics: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
-
 
 @bitcoin_price_router.get("/prices/{year}", response_model=List[Price], summary="Get Prices by Year")
 def get_prices_by_year(year: int, db: Session = Depends(get_db)) -> Dict[str, Any]:

@@ -25,13 +25,63 @@ app = FastAPI(
         "data in a highly organised format that is easy to consume and use in various applications."
     ),
     contact={
-        "name": "Nafisa Lawal Idris",
-        "portfolio": "https://nafisalawalidris.github.io/13/",
+    "name": "Nafisa Lawal Idris",
+    "url": "https://nafisalawalidris.github.io/13/",
     },
     license_info={
         "name": "MIT",
     },
 )
+
+# Root endpoint for general information
+@app.get("/", summary="Root Endpoint")
+def root():
+    return {"message": "Welcome to the Bitcoin Price Analysis and Real-Time Data API"}
+
+# Root details endpoint
+@app.get("/api/0.1.0/root/", tags=["Root"], summary="Root Details")
+def read_root_details():
+    return {
+        "overview": "This API provides various endpoints to access historical Bitcoin price data.",
+        "endpoints": [
+                        {
+                "path": "/api/0.1.0/root/",
+                "description": "Provides information about the root of the API, including available endpoints and their descriptions."
+            },
+            {
+                "path": "/api/0.1.0/prices/",
+                "description": "Retrieves the complete historical dataset of Bitcoin prices from the database."
+            },
+            {
+                "path": "/api/0.1.0/prices/{year}",
+                "description": "Fetches Bitcoin price data for a specific year."
+            },
+            {
+                "path": "/api/0.1.0/prices/halving/{halving_number}",
+                "description": "Provides Bitcoin price data around a specific halving event."
+            },
+            {
+                            "path": "/api/0.1.0/prices/statistics",
+                "description": "Retrieves various statistical insights about Bitcoin prices over a specified period."
+            },
+            {
+                "path": "/api/0.1.0/prices/bybit",
+                "description": "Fetches the most recent Bitcoin price from the Bybit exchange."
+            },
+            {
+                "path": "/api/0.1.0/prices/binance",
+                "description": "Retrieves the latest Bitcoin price from the Binance exchange."
+            },
+            {
+                "path": "/api/0.1.0/prices/coinbase",
+                "description": "Retrieves the current Bitcoin price from the Coinbase exchange."
+            },
+            {
+                "path": "/api/0.1.0/prices/kucoin",
+                "description": "Fetches the latest Bitcoin price from the KuCoin exchange."
+            }
+        ]
+    }
 
 # Database configuration
 SQLALCHEMY_DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:password@localhost/Bitcoin_Prices_Database')
@@ -61,60 +111,6 @@ def startup_event():
 def shutdown_event():
     logging.info("Shutting down the application.")
     # Add any necessary cleanup logic here
-
-# Root endpoint for general information
-@app.get("/", summary="Root Endpoint")
-def root():
-    return {"message": "Welcome to the Bitcoin Price Analysis and Real-Time Data API"}
-
-# Root details endpoint
-@app.get("/api/0.1.0/root/", tags=["Root"], summary="Root Details")
-def read_root_details():
-    return {
-        "overview": "This API provides various endpoints to access historical Bitcoin price data.",
-        "endpoints": [
-            {
-                "path": "/api/0.1.0/prices/statistics",
-                "description": "Retrieves various statistical insights about Bitcoin prices over a specified period."
-            },
-            {
-                "path": "/api/0.1.0/prices/",
-                "description": "Retrieves the complete historical dataset of Bitcoin prices from the database."
-            },
-            {
-                "path": "/api/0.1.0/prices/{year}",
-                "description": "Fetches Bitcoin price data for a specific year."
-            },
-            {
-                "path": "/api/0.1.0/prices/halving/{halving_number}",
-                "description": "Provides Bitcoin price data around a specific halving event."
-            },
-            {
-                "path": "/api/0.1.0/prices/bybit",
-                "description": "Fetches the most recent Bitcoin price from the Bybit exchange."
-            },
-            {
-                "path": "/api/0.1.0/prices/binance",
-                "description": "Retrieves the latest Bitcoin price from the Binance exchange."
-            },
-            {
-                "path": "/api/0.1.0/prices/kraken",
-                "description": "Provides the latest Bitcoin price from the Kraken exchange."
-            },
-            {
-                "path": "/api/0.1.0/prices/coinbase",
-                "description": "Retrieves the current Bitcoin price from the Coinbase exchange."
-            },
-            {
-                "path": "/api/0.1.0/prices/kucoin",
-                "description": "Fetches the latest Bitcoin price from the KuCoin exchange."
-            },
-            {
-                "path": "/api/0.1.0/root/",
-                "description": "Provides information about the root of the API, including available endpoints and their descriptions."
-            }
-        ]
-    }
 
 # Main entry point for running the app
 if __name__ == "__main__":
