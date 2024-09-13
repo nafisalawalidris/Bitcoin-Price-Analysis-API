@@ -7,84 +7,100 @@ import uvicorn
 from app.routers import real_time
 from app.routers.historical import bitcoin_price_router
 from app.database import Base
-
-# Set up logging configuration
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+from app.routers.real_time import real_time_router
 
 # FastAPI instance with metadata
 app = FastAPI(
     title="Bitcoin Price Analysis and Real-Time Data API",
     version="0.1.0",
-    description=(
+    description=(  # Description updated for clarity
         "The Bitcoin Price Analysis and Real-Time Data API is an open-source API project designed to provide "
         "accurate, up-to-date and comprehensive Bitcoin pricing data for developers, researchers and financial "
         "analysts. Built on the robust FastAPI framework, this API offers seamless integration and high-performance "
         "endpoints for users who require real-time and historical Bitcoin price information. With Bitcoin being one of "
         "the most volatile and widely traded digital assets, access to reliable price data is critical for informed "
-        "decision-making in trading, investment and market analysis. This API serves as a one-stop solution, delivering "
+        "decision-making in trading, investment and market analysis. This API serves as a one-stop solution delivering "
         "data in a highly organised format that is easy to consume and use in various applications."
     ),
-    contact={
-    "name": "Nafisa Lawal Idris",
-    "url": "https://nafisalawalidris.github.io/13/",
+    contact={  # Contact details updated for clarity
+        "name": "Nafisa Lawal Idris",
+        "url": "https://nafisalawalidris.github.io/13/"
     },
-    license_info={
+    license_info={  # License information updated
         "name": "MIT",
     },
 )
 
-# Root endpoint for general information
+# Root Endpoint
 @app.get("/", summary="Root Endpoint")
 def root():
-    return {"message": "Welcome to the Bitcoin Price Analysis and Real-Time Data API"}
+    return {
+        "message": "Welcome to the Bitcoin Price Analysis and Real-Time Data API",
+        "details": "Visit /api/0.1.0/root/ for information about the API endpoints and their descriptions."
+    }
 
-# Root details endpoint
+# Root Details
 @app.get("/api/0.1.0/root/", tags=["Root"], summary="Root Details")
 def read_root_details():
     return {
         "overview": "This API provides various endpoints to access historical Bitcoin price data.",
         "endpoints": [
-                        {
+            {
+                "path": "/",
+                "description": "Provides a welcome message and overview of the API."
+            },
+            {
                 "path": "/api/0.1.0/root/",
                 "description": "Provides information about the root of the API, including available endpoints and their descriptions."
             },
             {
-                "path": "/api/0.1.0/prices/",
-                "description": "Retrieves the complete historical dataset of Bitcoin prices from the database."
+                "path": "/historical/prices/",
+                "description": "Retrieve the complete historical dataset of Bitcoin prices."
             },
             {
-                "path": "/api/0.1.0/prices/{year}",
-                "description": "Fetches Bitcoin price data for a specific year."
+                "path": "/historical/prices/{year}",
+                "description": "Fetch Bitcoin price data for a specific year."
             },
             {
-                "path": "/api/0.1.0/prices/halving/{halving_number}",
-                "description": "Provides Bitcoin price data around a specific halving event."
+                "path": "/historical/prices/halving/{halving_number}",
+                "description": "Provide Bitcoin price data around a specific halving event."
             },
             {
-                            "path": "/api/0.1.0/prices/statistics",
-                "description": "Retrieves various statistical insights about Bitcoin prices over a specified period."
+                "path": "/historical/prices/statistics",
+                "description": "Retrieve various statistical insights about Bitcoin prices over a specified period."
             },
             {
-                "path": "/api/0.1.0/prices/bybit",
-                "description": "Fetches the most recent Bitcoin price from the Bybit exchange."
+                "path": "/api/coingecko",
+                "description": "Fetch Bitcoin price from CoinGecko.",
+                "method": "GET"
             },
             {
-                "path": "/api/0.1.0/prices/binance",
-                "description": "Retrieves the latest Bitcoin price from the Binance exchange."
+                "path": "/api/coincap",
+                "description": "Fetch Bitcoin price from CoinCap.",
+                "method": "GET"
             },
             {
-                "path": "/api/0.1.0/prices/coinbase",
-                "description": "Retrieves the current Bitcoin price from the Coinbase exchange."
+                "path": "/api/binance",
+                "description": "Fetch Bitcoin price from Binance.",
+                "method": "GET"
             },
             {
-                "path": "/api/0.1.0/prices/kucoin",
-                "description": "Fetches the latest Bitcoin price from the KuCoin exchange."
+                "path": "/api/kraken",
+                "description": "Fetch Bitcoin price from Kraken.",
+                "method": "GET"
             }
         ]
     }
 
+# Include routers for different functionalities
+app.include_router(bitcoin_price_router, prefix="/historical", tags=["Historical Data"])
+app.include_router(real_time_router, prefix="/api", tags=["Real-Time Data"])
+
+# Set up logging configuration
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
 # Database configuration
-SQLALCHEMY_DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:password@localhost/Bitcoin_Prices_Database')
+SQLALCHEMY_DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:Feenah413@localhost/Bitcoin_Prices_Database')
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -95,10 +111,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
-# Include routers for different functionalities
-app.include_router(bitcoin_price_router, prefix="/historical", tags=["Historical Data"])
-app.include_router(real_time.real_time_router, prefix="/real-time", tags=["Real-Time Data"])
 
 # Event handler to create database tables on startup
 @app.on_event("startup")

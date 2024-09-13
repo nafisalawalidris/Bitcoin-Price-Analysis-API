@@ -1,5 +1,7 @@
 from sqlalchemy import Column, Date, Float, Integer
 from app.database import Base
+from pydantic import BaseModel
+from typing import Optional
 
 class BitcoinPrice(Base):
     __tablename__ = 'bitcoin_prices'
@@ -25,3 +27,12 @@ class BitcoinPrice(Base):
             "adj_close": self.adj_close,
             "volume": self.volume
         }
+
+class BitcoinPriceResponse(BaseModel):
+    date: str
+    open: float
+    high: float
+    low: float
+    close: float
+    adj_close: Optional[float] = None
+    volume: int
