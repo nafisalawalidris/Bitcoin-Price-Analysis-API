@@ -1,13 +1,19 @@
-import pytest
-from fastapi.testclient import TestClient
-from app.main import app
+def test_get_price_from_coingecko():
+    response = client.get("/api/coingecko")
+    assert response.status_code == 200
+    assert "price" in response.json()
 
-@pytest.fixture(scope="module")
-def client():
-    return TestClient(app)
+def test_get_price_from_coincap():
+    response = client.get("/api/coincap")
+    assert response.status_code == 200
+    assert "price" in response.json()
 
-def test_websocket_connection(client):
-    with client.websocket_connect("/ws/updates") as websocket:
-        websocket.send_text("Request update")
-        response = websocket.receive_text()
-        assert response == "Update received"  # Adjust based on expected response
+def test_get_price_from_binance():
+    response = client.get("/api/binance")
+    assert response.status_code == 200
+    assert "price" in response.json()
+
+def test_get_price_from_kraken():
+    response = client.get("/api/kraken")
+    assert response.status_code == 200
+    assert "price" in response.json()
