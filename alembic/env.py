@@ -1,25 +1,29 @@
-from __future__ import print_function  # This should be at the very top
-
+from __future__ import print_function
+import sys
 import os
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
-from app.database import Base  # Import Base from your database module
 
-# Import models to ensure they are registered with Base
-from app.models.prices import BitcoinPrice
+# Ensure the path is set correctly to locate your application modules
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
 
+# Import Base and models to ensure they are registered
+from app.database import Base  # Adjust import path if necessary
+from app.models.bitcoin_price import BitcoinPrice  # Ensure this import path is correct
+
+# Alembic Config object, contains settings for migrations
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
+# Setup logging if config file is provided
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
+# Target metadata for 'autogenerate' support
 target_metadata = Base.metadata
 
 def get_url():
-    """Retrieve the SQLAlchemy URL from environment variables or configuration file."""
+    """Retrieve the database URL from environment variable or config."""
     return os.getenv('DATABASE_URL', config.get_main_option("sqlalchemy.url"))
 
 def run_migrations_offline() -> None:
@@ -52,6 +56,7 @@ def run_migrations_online() -> None:
         with context.begin_transaction():
             context.run_migrations()
 
+# Decide which mode to use based on the Alembic context
 if context.is_offline_mode():
     run_migrations_offline()
 else:
