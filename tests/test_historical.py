@@ -21,4 +21,9 @@ def test_get_prices_around_halving():
 def test_get_price_statistics():
     response = client.get("/historical/prices/statistics")
     assert response.status_code == 200
-    assert "min_price" in response.json()
+    assert response.json() == {
+        "min_price": 0.0,  
+        "max_price": 0.0,
+        "avg_price": 0.0,
+        "total_entries": 0
+    }

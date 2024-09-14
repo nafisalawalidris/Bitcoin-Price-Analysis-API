@@ -54,19 +54,19 @@ def read_root_details():
                 "description": "Provides information about the root of the API, including available endpoints and their descriptions."
             },
             {
-                "path": "/historical/prices/",
+                "path": "/prices/",
                 "description": "Retrieve the complete historical dataset of Bitcoin prices."
             },
             {
-                "path": "/historical/prices/{year}",
+                "path": "/prices/{year}",
                 "description": "Fetch Bitcoin price data for a specific year."
             },
             {
-                "path": "/historical/prices/halving/{halving_number}",
+                "path": "/prices/halving/{halving_number}",
                 "description": "Provide Bitcoin price data around a specific halving event."
             },
             {
-                "path": "/historical/prices/statistics",
+                "path": "/prices/statistics",
                 "description": "Retrieve various statistical insights about Bitcoin prices over a specified period."
             },
             {
@@ -93,7 +93,7 @@ def read_root_details():
     }
 
 # Include routers for different functionalities
-app.include_router(bitcoin_price_router, prefix="/historical", tags=["Historical Data"])
+app.include_router(bitcoin_price_router, prefix="/api", tags=["Historical Data"])
 app.include_router(real_time_router, prefix="/api", tags=["Real-Time Data"])
 
 # Set up logging configuration

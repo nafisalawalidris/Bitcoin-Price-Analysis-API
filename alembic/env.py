@@ -9,8 +9,6 @@ from app.database import Base  # Import Base from your database module
 # Import models to ensure they are registered with Base
 from app.models.prices import BitcoinPrice
 
-# This is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
 config = context.config
 
 # Interpret the config file for Python logging.
@@ -18,8 +16,6 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Add your model's MetaData object here
-# for 'autogenerate' support
 target_metadata = Base.metadata
 
 def get_url():
