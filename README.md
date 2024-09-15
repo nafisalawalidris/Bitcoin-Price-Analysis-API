@@ -4,6 +4,8 @@ As a Data Scientist with 3 years of experience, I am expanding my skill set to i
 
 If you find this project useful, kindly consider giving it a star ⭐ on GitHub. Contributions are also welcome as it is intended for open-source collaboration!
 
+![alt text](<Endpoint Swagger-1.png>)
+
 ## Table of Contents
 
 - [Overview](#overview)
