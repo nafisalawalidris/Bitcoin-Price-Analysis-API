@@ -31,7 +31,7 @@ The Bitcoin Price Analysis and Real-Time Data API offers a comprehensive solutio
 ## Features
 
 - **Historical Data Retrieval**: Fetch daily Bitcoin prices for any year between 2013 and 2024.
-- **Real-Time Data Access**: Get the latest Bitcoin prices from major exchanges like Bybit, Binance, Kraken, and Coinbase.
+- **Real-Time Data Access**: Get the latest Bitcoin prices from major exchanges like CoinGecko, Coincap, Binance and Kraken.
 - **API Endpoints**: A range of endpoints for accessing Bitcoin prices, including those around halving events.
 - **Scalable and Efficient**: Built with FastAPI and PostgreSQL to handle large datasets and provide fast responses.
 
