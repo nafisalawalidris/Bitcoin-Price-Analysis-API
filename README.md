@@ -43,6 +43,7 @@ The Bitcoin Price Analysis and Real-Time Data API offers a comprehensive solutio
 - **Uvicorn**: ASGI server for running the FastAPI application.
 
 ## Getting Started
+![alt text](<Project Plan_ Bitcoin Price Analysis API-1.jpg>)
 
 ### Prerequisites
 
